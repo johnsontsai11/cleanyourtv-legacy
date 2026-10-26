@@ -126,7 +126,15 @@ START_OUT=$("$PY" -I ../tools/tv.py 'am start -W -a android.intent.action.MAIN -
 echo "$START_OUT"
 # Both halves matter: some builds answer "Status: ok" for a task that was merely brought to the
 # front, and an activity that cannot start still prints "Error: Activity not started".
-if ! printf '%s' "$START_OUT" | grep -qF 'Status: ok' || printf '%s' "$START_OUT" | grep -qi '^Error'; then
+# Android 7 answers "Status: timeout" even when the launcher came up (Sony KDL-55W800C), so a timeout
+# counts only when the TV then names our activity as the resumed one.
+START_OK=""
+if printf '%s' "$START_OUT" | grep -qF 'Status: ok'; then START_OK=1
+elif printf '%s' "$START_OUT" | grep -qF 'Status: timeout'; then
+  "$PY" -I ../tools/tv.py 'dumpsys activity activities | grep mResumedActivity' 2>/dev/null \
+    | grep -qF 'com.gathin.tvhome/.MainActivity' && START_OK=1
+fi
+if [ -z "$START_OK" ] || printf '%s' "$START_OUT" | grep -qi '^Error'; then
   echo "ERROR: the new launcher did not start (see above); $STOCK_LAUNCHER was left enabled." >&2
   exit 1
 fi

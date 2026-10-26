@@ -79,7 +79,13 @@ if ($LASTEXITCODE -ne 0 -or "$out" -match 'Error') { throw 'could not set the ne
 # in the batch a failed start only prints an Error line and the stock launcher would be disabled anyway.
 $start = (& $py -I ..\tools\tv.py 'am start -W -a android.intent.action.MAIN -c android.intent.category.HOME -n com.gathin.tvhome/.MainActivity') -join "`n"
 Write-Host $start
-if ($LASTEXITCODE -ne 0 -or $start -notmatch 'Status: ok' -or $start -match '(?m)^Error') { throw "the new launcher did not start (see above); $StockLauncher was left enabled" }
+# Android 7 answers "Status: timeout" even when the launcher came up: then the resumed activity decides.
+$started = $start -match 'Status: ok'
+if (-not $started -and $start -match 'Status: timeout') {
+    $resumed = (& $py -I ..\tools\tv.py 'dumpsys activity activities | grep mResumedActivity') -join "`n"
+    $started = $resumed -match [regex]::Escape('com.gathin.tvhome/.MainActivity')
+}
+if ($LASTEXITCODE -ne 0 -or -not $started -or $start -match '(?m)^Error') { throw "the new launcher did not start (see above); $StockLauncher was left enabled" }
 @(
     'pm grant com.gathin.tvhome android.permission.ACCESS_FINE_LOCATION 2>/dev/null; echo location-granted',
     'cmd package compile -m speed -f com.gathin.tvhome',

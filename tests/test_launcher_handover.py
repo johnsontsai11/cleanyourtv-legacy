@@ -51,11 +51,18 @@ def run(command):
     if "pm install" in command:
         return "Success\n"
     if "am start" in command:
+        if state["start_times_out"]:
+            # Android 7: the start is reported as a timeout, whether or not the activity came up.
+            return ("Starting: Intent { cmp=com.gathin.tvhome/.MainActivity }\n"
+                    "Status: timeout\nActivity: com.gathin.tvhome/.MainActivity\nComplete\n")
         if state["start_fails"]:
             return ("Starting: Intent { cmp=com.gathin.tvhome/.MainActivity }\n"
                     "Error: Activity not started, unable to resolve Intent\n")
         return ("Starting: Intent { cmp=com.gathin.tvhome/.MainActivity }\n"
                 "Status: ok\nActivity: com.gathin.tvhome/.MainActivity\n")
+    if "mResumedActivity" in command:
+        top = "com.gathin.tvhome/.MainActivity" if state["timeout_started"] else "com.sony.dtv.tvx/.MainActivity"
+        return "    mResumedActivity: ActivityRecord{a55af2a u0 %s t2744}\n" % top
     if "pm disable-user" in command:
         if state["disable_fails"]:
             return "Error: java.lang.SecurityException\n"
@@ -143,6 +150,8 @@ class HandoverTest(unittest.TestCase):
             "home": STOCK_HOME,
             "stock_disabled": False,
             "start_fails": False,
+            "start_times_out": False,
+            "timeout_started": False,
             "disable_fails": False,
             "set_home_fails": False,
             "enable_fails": False,
@@ -190,6 +199,19 @@ class HandoverTest(unittest.TestCase):
         self.assertIn("did not start", result.stderr)
         self.assertIn("was left enabled", result.stderr)
         self.assertNotIn("Installed.", result.stdout)
+        self.assertFalse(any("pm disable-user" in c for c in state["commands"]))
+        self.assertFalse(state["stock_disabled"])
+
+    def test_android7_timeout_with_launcher_resumed_hands_home_over(self):
+        result, state = self.handover(start_times_out=True, timeout_started=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(state["stock_disabled"])
+        self.assertEqual(state["home"], NEW_HOME)
+
+    def test_android7_timeout_without_launcher_leaves_stock_home_enabled(self):
+        result, state = self.handover(start_times_out=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("did not start", result.stderr)
         self.assertFalse(any("pm disable-user" in c for c in state["commands"]))
         self.assertFalse(state["stock_disabled"])
 
