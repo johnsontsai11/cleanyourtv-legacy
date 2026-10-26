@@ -5,6 +5,8 @@ import android.content.res.Resources;
 import android.graphics.Typeface;
 import android.util.TypedValue;
 
+import androidx.core.content.res.ResourcesCompat;
+
 /**
  * The typeface behind one of the font_* strings in res/values/fonts.xml, for views built in code. The string
  * points at a bundled font, or, in locales Outfit can't draw (values-vi), names a system family (#833).
@@ -17,7 +19,10 @@ final class UiFont {
         TypedValue value = new TypedValue();
         res.getValue(fontString, value, true);
         String name = String.valueOf(value.string);
-        if (name.startsWith("res/")) return res.getFont(value.resourceId);
+        if (name.startsWith("res/")) {
+            Typeface font = ResourcesCompat.getFont(context, value.resourceId);
+            if (font != null) return font;
+        }
         return Typeface.create(name, Typeface.NORMAL);
     }
 }
