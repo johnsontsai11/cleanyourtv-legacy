@@ -69,4 +69,9 @@
     <string name="settings_section_look">外觀</string>
     <string name="settings_section_system">系統</string>
     <string name="parental_sign_out">登出 %1$s</string>
+    <string name="settings_keyboard_state">鍵盤：%1$s</string>
+    <string name="settings_keyboard_hint">按一下在 Google 鍵盤與原本的鍵盤之間切換。用遙控器數字鍵輸入密碼時，Google 鍵盤不會跳到按下的鍵；要輸入中文時再切換回來。</string>
+    <string name="settings_keyboard_needs_grant">切換鍵盤需要先在電腦上授權：adb shell pm grant com.gathin.tvhome android.permission.WRITE_SECURE_SETTINGS</string>
+    <string name="keyboard_pill_google">Google 鍵盤</string>
+    <string name="keyboard_pill_usual">多語言鍵盤</string>
 </resources>

@@ -383,6 +383,16 @@
                     android:drawableStart="@drawable/ic_apps_pill"
                     android:nextFocusDown="@+id/grid" />
 
+                <!-- Fork: one press between Google's keyboard and the usual one (PasswordKeyboard). Shown when
+                     Google's keyboard is enabled and the launcher may switch keyboards. -->
+                <TextView
+                    android:id="@+id/btnKeyboard"
+                    style="@style/TopButton"
+                    android:visibility="gone"
+                    android:singleLine="true"
+                    android:drawableStart="@drawable/ic_keyboard_pill"
+                    android:nextFocusDown="@+id/grid" />
+
                 <TextView
                     android:id="@+id/btnSettings"
                     style="@style/TopButton"

@@ -70,4 +70,9 @@
     <string name="settings_section_look">Appearance</string>
     <string name="settings_section_system">System</string>
     <string name="parental_sign_out">Sign out %1$s</string>
+    <string name="settings_keyboard_state">Keyboard: %1$s</string>
+    <string name="settings_keyboard_hint">Press to switch between Google\'s keyboard and the usual one. Google\'s keeps its highlight still when a password is typed with the remote\'s number keys; switch back for Chinese typing.</string>
+    <string name="settings_keyboard_needs_grant">Switching keyboards needs a permission granted from a computer: adb shell pm grant com.gathin.tvhome android.permission.WRITE_SECURE_SETTINGS</string>
+    <string name="keyboard_pill_google">Google keyboard</string>
+    <string name="keyboard_pill_usual">Usual keyboard</string>
 </resources>

@@ -193,6 +193,21 @@
             android:layout_marginTop="7dp"
             android:text="@string/home_settings_help" />
 
+        <!-- Fork: one press between Google's TV keyboard (its highlight stays still when a password is typed with
+             the number keys) and the usual one. Shown when Google's keyboard is installed and enabled. -->
+        <TextView
+            android:id="@+id/keyboardChoice"
+            style="@style/SettingsRow"
+            android:layout_marginTop="18dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/keyboardHint"
+            style="@style/SettingsHint"
+            android:layout_marginTop="7dp"
+            android:text="@string/settings_keyboard_hint"
+            android:visibility="gone" />
+
         <TextView
             android:id="@+id/tvSettingsChoice"
             style="@style/SettingsRow"

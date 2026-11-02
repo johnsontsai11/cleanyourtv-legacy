@@ -202,6 +202,28 @@ public final class LauncherSettingsActivity extends Activity {
     protected void onResume() {
         super.onResume();
         updateExtraChoice();
+        updateKeyboardChoice();
+    }
+
+    // ---- Fork: keyboard switch ----
+
+    /** "Keyboard: <name>": one press between Google's keyboard and the usual one. Shown when Google's is there. */
+    private void updateKeyboardChoice() {
+        TextView row = findViewById(R.id.keyboardChoice);
+        boolean available = PasswordKeyboard.available(this);
+        row.setVisibility(available ? View.VISIBLE : View.GONE);
+        findViewById(R.id.keyboardHint).setVisibility(available ? View.VISIBLE : View.GONE);
+        if (!available) return;
+        row.setText(getString(R.string.settings_keyboard_state, PasswordKeyboard.currentLabel(this)));
+        row.setOnClickListener(v -> {
+            if (!PasswordKeyboard.permitted(this) || !PasswordKeyboard.toggle(this)) {
+                // Switching keyboards needs WRITE_SECURE_SETTINGS (pm grant); the TV's keyboard page meanwhile.
+                Toast.makeText(this, R.string.settings_keyboard_needs_grant, Toast.LENGTH_LONG).show();
+                open(new Intent(Settings.ACTION_INPUT_METHOD_SETTINGS));
+                return;
+            }
+            updateKeyboardChoice();
+        });
     }
 
     /** Fork, parental controls: "End extra time (until 21:42)" while a parent's extra time runs. */

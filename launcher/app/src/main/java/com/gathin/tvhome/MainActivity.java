@@ -306,6 +306,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private Set<String> hiddenApps = Collections.emptySet();
     /** Fork, parental controls: the profile pill, and who Home's tiles were last built for. */
     private TextView btnViewer;
+    /** Fork: Google's keyboard and the usual one, one press apart (PasswordKeyboard). */
+    private TextView btnKeyboard;
     private String parentalHomeKey;
     /** library_excluded_apps: packages the App library catalogue never offers. */
     private Set<String> libraryExcludedApps = Collections.emptySet();
@@ -820,6 +822,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // Fork, parental controls: the profile pill.
         btnViewer = findViewById(R.id.btnViewer);
         registerScreenReceiver();
+        // Fork: the keyboard pill.
+        btnKeyboard = findViewById(R.id.btnKeyboard);
+        btnKeyboard.setOnClickListener(v -> {
+            if (PasswordKeyboard.toggle(this)) updateKeyboardPill();
+            else Toast.makeText(this, R.string.settings_keyboard_needs_grant, Toast.LENGTH_LONG).show();
+        });
         btnViewer.setOnClickListener(v -> startActivity(WhoActivity.intent(this, null)));
         View btnSettings = findViewById(R.id.btnSettings);
         btnInputs.setOnClickListener(v -> showInputs());
@@ -918,6 +926,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             return keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && v.getId() == rightButton;
         };
         btnViewer.setOnKeyListener(pillKeys);
+        btnKeyboard.setOnKeyListener(pillKeys);
         btnInputs.setOnKeyListener(pillKeys);
         btnWifi.setOnKeyListener(pillKeys);
         btnVpn.setOnKeyListener(pillKeys);
@@ -926,7 +935,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnLibraryTop.setOnKeyListener(pillKeys);
         for (View button : topAppButtons) button.setOnKeyListener(pillKeys);
         if (advancedEffects) {
-            List<View> pills = new ArrayList<>(Arrays.asList(btnViewer, btnInputs, btnWifi, btnVpn, btnReorder, btnLibraryTop, btnSettings));
+            List<View> pills = new ArrayList<>(Arrays.asList(btnViewer, btnInputs, btnWifi, btnVpn, btnReorder, btnLibraryTop, btnKeyboard, btnSettings));
             pills.addAll(topAppButtons);
             for (View button : pills) {
                 button.setOnFocusChangeListener((view, focused) -> view.animate()
@@ -1095,6 +1104,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         resumed = true;
         Parental.schedule(this);
         updateViewer();
+        updateKeyboardPill();
         // Waking the TV resumes Home and sends "screen on" at about the same time; look again once the pick is
         // cleared (Parental.onScreenOn), so the pill does not keep showing whoever watched before standby.
         handler.postDelayed(this::updateViewer, 1500);
@@ -3324,6 +3334,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 Parental.onScreenOn(c);
             }
         }, power);
+    }
+
+    /** Fork: "Google keyboard" or "Usual keyboard", shown only where switching works. */
+    private void updateKeyboardPill() {
+        if (btnKeyboard == null) return;
+        boolean shown = PasswordKeyboard.available(this) && PasswordKeyboard.permitted(this);
+        btnKeyboard.setVisibility(shown ? View.VISIBLE : View.GONE);
+        if (shown) {
+            btnKeyboard.setText(PasswordKeyboard.GOOGLE_TV_KEYBOARD.equals(PasswordKeyboard.current(this))
+                    ? R.string.keyboard_pill_google : R.string.keyboard_pill_usual);
+        }
     }
 
     /** Fork, parental controls: the pill shows who is watching; a new viewer gets their own allowed apps. */
