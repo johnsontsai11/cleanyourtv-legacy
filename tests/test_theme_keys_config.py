@@ -68,6 +68,7 @@ EXEMPT = {
     "parental_controls": "docs/parental-controls.md: a per-TV switch, set in config.xml",
     "parental_exempt_apps": "docs/parental-controls.md: a per-TV list, set in config.xml",
     "parental_locked_settings": "docs/parental-controls.md: a per-TV list, set in config.xml",
+    "pills_expand_on_focus": "launcher/app/src/main/res/values/config.xml: a per-TV fork switch, set in config.xml",
 }
 
 
@@ -262,6 +263,7 @@ class KeysTableCoversConfigXmlTest(unittest.TestCase):
             "parental_controls": (JAVA_DIR / "Parental.java", "R.bool.parental_controls"),
             "parental_exempt_apps": (JAVA_DIR / "Parental.java", "R.array.parental_exempt_apps"),
             "parental_locked_settings": (JAVA_DIR / "Parental.java", "R.array.parental_locked_settings"),
+            "pills_expand_on_focus": (JAVA_DIR / "MainActivity.java", "R.bool.pills_expand_on_focus"),
         }
         for name in EXEMPT:
             with self.subTest(key=name):

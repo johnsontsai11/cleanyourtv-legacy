@@ -840,7 +840,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         launcherSettingsButton = cfg.launcherSettingsButton;
         if (launcherSettingsButton) {
             ((TextView) btnSettings).setText(R.string.launcher_settings);
-            ((TextView) btnSettings).setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_home_settings_pill, 0, 0, 0);
+            // Fork: the gear, not the house, for the pill that opens Launcher settings.
+            ((TextView) btnSettings).setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_settings, 0, 0, 0);
         }
         btnSettings.setOnClickListener(v -> {
             if (launcherSettingsButton) startActivityForResult(
@@ -944,6 +945,18 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             }
         }
         if (festive) applyFestiveSkin((TextView) btnInputs, (TextView) btnSettings);
+        // Fork: pills_expand_on_focus. Pills already made icon-only keep their config; the profile pill and the VPN
+        // pill (no icon while no VPN is up) always show their text.
+        if (getResources().getBoolean(R.bool.pills_expand_on_focus)) {
+            List<TextView> expanding = new ArrayList<>();
+            if (!cfg.iconOnlyInputs) expanding.add((TextView) btnInputs);
+            if (!cfg.iconOnlyButtons) {
+                expanding.add(btnWifi);
+                expanding.add((TextView) btnSettings);
+            }
+            expanding.add(btnKeyboard);
+            setUpPillExpand(expanding);
+        }
 
         // Hide the glass when focus leaves the tiles.
         getWindow().getDecorView().getViewTreeObserver().addOnGlobalFocusChangeListener((oldF, newF) -> {
@@ -3061,6 +3074,55 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private boolean libraryFromVpnPill;
 
     /** Turns a labelled top pill into the round TopButtonIcon shape: no text, the icon centred by even padding. */
+    /**
+     * Fork: pills_expand_on_focus. Each pill shows only its round icon until it takes the focus, then widens to its
+     * label, and narrows again when the focus leaves. One global focus listener does it, so the pills' own focus
+     * listeners (the lift animation, the festive icons) stay as they are. The label is kept in the TextView (code
+     * elsewhere updates the network name and the keyboard name), only hidden while the pill is narrow.
+     */
+    private void setUpPillExpand(List<TextView> pills) {
+        java.util.Map<View, int[]> wide = new java.util.HashMap<>();
+        java.util.Map<View, ColorStateList> ink = new java.util.HashMap<>();
+        ViewGroup bar = findViewById(R.id.topButtons);
+        // Line the pills up by their box, not their text: a narrow pill's hidden label would otherwise set it lower.
+        if (bar instanceof LinearLayout) ((LinearLayout) bar).setBaselineAligned(false);
+        for (TextView p : pills) {
+            if (p == null) continue;
+            p.setMaxLines(1);   // a narrow pill must not wrap its hidden label onto more lines
+            wide.put(p, new int[]{p.getPaddingStart(), p.getPaddingEnd(), p.getCompoundDrawablePadding(),
+                    p.getLayoutParams().width});
+            ink.put(p, p.getTextColors());
+            setPillWide(p, false, wide.get(p), ink.get(p));
+        }
+        bar.getViewTreeObserver().addOnGlobalFocusChangeListener((oldFocus, newFocus) -> {
+            boolean changes = wide.containsKey(oldFocus) || wide.containsKey(newFocus);
+            if (!changes) return;
+            if (animations && !reducedMotion) {
+                android.transition.TransitionManager.beginDelayedTransition(bar,
+                        new android.transition.ChangeBounds().setDuration(160));
+            }
+            if (wide.containsKey(oldFocus)) setPillWide((TextView) oldFocus, false, wide.get(oldFocus), ink.get(oldFocus));
+            if (wide.containsKey(newFocus)) setPillWide((TextView) newFocus, true, wide.get(newFocus), ink.get(newFocus));
+        });
+    }
+
+    /** The pill at its label's width, or narrowed to its 42 dp icon with the label hidden. */
+    private void setPillWide(TextView p, boolean on, int[] wide, ColorStateList ink) {
+        if (on) {
+            p.setPaddingRelative(wide[0], p.getPaddingTop(), wide[1], p.getPaddingBottom());
+            p.setCompoundDrawablePadding(wide[2]);
+            p.setTextColor(ink);
+            p.getLayoutParams().width = wide[3];
+        } else {
+            int pad = Math.round(10 * density);
+            p.setPaddingRelative(pad, p.getPaddingTop(), pad, p.getPaddingBottom());
+            p.setCompoundDrawablePadding(0);
+            p.setTextColor(Color.TRANSPARENT);
+            p.getLayoutParams().width = Math.round(42 * density);
+        }
+        p.requestLayout();
+    }
+
     private void makeIconOnly(TextView pill) {
         pill.setContentDescription(pill.getText());
         pill.setText(null);

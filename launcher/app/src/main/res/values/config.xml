@@ -315,6 +315,10 @@
     <!-- This TV: on, so the Settings pill opens Launcher settings (Parental controls at the top, behind the PIN)
          and the TV's system settings are one row inside it. -->
     <bool name="launcher_settings_button">true</bool>
+    <!-- Fork: the top bar's Inputs, network, keyboard and Settings pills show only their icon until they take the
+         focus, then widen to their label. The profile pill keeps its name. false: every pill shows its label, as
+         before. This TV: on. -->
+    <bool name="pills_expand_on_focus">true</bool>
     <!-- The dock band as light frosted glass, like the Inputs, Wi-Fi and Settings pills, so a sky or wallpaper shows
          through it. false (the default) keeps the solid near-black band, or the cinematic shelf's dark glass. Can
          also be set with "dock_glass": true in a theme's config.json. -->
