@@ -1,7 +1,7 @@
 > **cleanyourtv-legacy** is a fork of [Gathin23/cleanyourtv](https://github.com/Gathin23/cleanyourtv) whose launcher
 > installs on Android 7 (`minSdk` 24 instead of 26). Tested on a Sony BRAVIA KDL-55W800C (SVP-DTV15, Taiwan
 > firmware), Android TV 7.0. What changed: `java.time` is desugared into the APK (about 650 KB, over upstream's
-> 576 KB gate, so CI here allows 704 KB); `getChangedPackages`, `Resources.getFont` and hardware bitmaps are
+> 576 KB gate, so CI here allows 800 KB); `getChangedPackages`, `Resources.getFont` and hardware bitmaps are
 > guarded below API 26, so the app list is rescanned on every return to Home and the wallpaper stays a software
 > bitmap; Outfit falls back to Roboto where an XML layout sets it; and `launcher/build-and-install.sh` accepts
 > Android 7's `am start` "Status: timeout" when the launcher is the resumed activity. On Android 7 the stock
