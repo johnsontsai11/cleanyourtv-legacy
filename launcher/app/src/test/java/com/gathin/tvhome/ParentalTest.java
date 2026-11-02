@@ -188,4 +188,28 @@ public class ParentalTest {
         // Elapsed went backwards: a reboot, even long after the pick.
         assertEquals(Parental.PICK_TV_WAS_OFF, Parental.pickEnd(500 * MIN, 1 * MIN, 1 * MIN, 0, 5 * MIN, 5 * MIN));
     }
+
+    @Test
+    public void anAppOpeningItsOwnSecondScreenStaysInFront() {
+        // SmartTube on the BRAVIA: its main screen, then a dialog screen of its own, and only then the main
+        // screen's background event. The app is still in front, and its time keeps counting.
+        long[] t = {0, 10 * MIN, 10 * MIN};
+        String[] p = {"tube", "tube", "tube"};
+        String[] cls = {"Browse", "Dialog", "Browse"};
+        int[] ty = {1, 1, 2};
+        String[] front = new String[1];
+        assertEquals(30 * MIN, Parental.used(t, p, cls, ty, 3, 0, 30 * MIN, pkg -> true, front, null));
+        assertEquals("tube", front[0]);
+    }
+
+    @Test
+    public void theBackgroundEventOfTheScreenInFrontStillEndsIt() {
+        long[] t = {0, 10 * MIN};
+        String[] p = {"tube", "tube"};
+        String[] cls = {"Browse", "Browse"};
+        int[] ty = {1, 2};
+        String[] front = new String[1];
+        assertEquals(10 * MIN, Parental.used(t, p, cls, ty, 2, 0, 30 * MIN, pkg -> true, front, null));
+        assertNull(front[0]);
+    }
 }

@@ -519,17 +519,37 @@ final class Parental {
      */
     static long used(long[] times, String[] pkgs, int[] types, int n, long from, long now,
                      Predicate<String> counted, String[] front, List<long[]> intervals) {
+        return used(times, pkgs, null, types, n, from, now, counted, front, intervals);
+    }
+
+    /**
+     * As above, with each event's activity class (`classes`, may be null). A background event ends the app only
+     * when it is for the activity in front: an app opening a second screen of its own (SmartTube's dialogs)
+     * sends the first screen's background event after the new screen's foreground one, and that used to read as
+     * the app leaving, so nothing counted as in front and bedtime never covered it.
+     */
+    static long used(long[] times, String[] pkgs, String[] classes, int[] types, int n, long from, long now,
+                     Predicate<String> counted, String[] front, List<long[]> intervals) {
         long total = 0;
-        String cur = null;
+        String cur = null, curClass = null;
         long start = 0;
         for (int i = 0; i < n; i++) {
+            String cls = classes == null ? null : classes[i];
             if (types[i] == 1) {
-                if (cur != null) total += overlap(cur, start, times[i], from, now, counted, intervals);
+                // Another screen of the app already in front is not a new start: keep counting from its start.
+                if (cur != null && !pkgs[i].equals(cur)) {
+                    total += overlap(cur, start, times[i], from, now, counted, intervals);
+                    start = times[i];
+                } else if (cur == null) {
+                    start = times[i];
+                }
                 cur = pkgs[i];
-                start = times[i];
-            } else if (types[i] == 2 && pkgs[i].equals(cur)) {
+                curClass = cls;
+            } else if (types[i] == 2 && pkgs[i].equals(cur)
+                    && (cls == null || curClass == null || cls.equals(curClass))) {
                 total += overlap(cur, start, times[i], from, now, counted, intervals);
                 cur = null;
+                curClass = null;
             }
         }
         if (cur != null) total += overlap(cur, start, now, from, now, counted, intervals);
@@ -633,15 +653,17 @@ final class Parental {
         int n = list.size();
         long[] times = new long[n];
         String[] pkgs = new String[n];
+        String[] classes = new String[n];
         int[] types = new int[n];
         for (int i = 0; i < n; i++) {
             UsageEvents.Event e = list.get(i);
             times[i] = e.getTimeStamp();
             pkgs[i] = e.getPackageName();
+            classes[i] = e.getClassName();
             types[i] = e.getEventType() == UsageEvents.Event.MOVE_TO_FOREGROUND ? 1 : 2;
         }
         String[] front = new String[1];
-        u.total = used(times, pkgs, types, n, day, now, p -> counted(c, p), front, u.intervals);
+        u.total = used(times, pkgs, classes, types, n, day, now, p -> counted(c, p), front, u.intervals);
         u.front = front[0];
         return u;
     }
