@@ -34,7 +34,7 @@ public final class SettingsGuardService extends AccessibilityService {
         if (!pkg.equals(getPackageName()) && isActivity(pkg, event.getClassName())
                 && Parental.blockIfNotAllowed(this, pkg, true)) return;
         if (Parental.isSettings(this, pkg)) {
-            if (Parental.unlocked()) {
+            if (!Parental.pinNeeded(this)) {
                 // A parent moving between settings screens: keep it open while they work.
                 Parental.keepUnlocked();
             } else {

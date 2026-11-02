@@ -175,9 +175,16 @@ public final class LauncherSettingsActivity extends Activity {
         // Fork, parental controls: the row, and these settings behind the PIN once one is set.
         View parentalChoice = findViewById(R.id.parentalChoice);
         if (Parental.enabled(this)) {
+            findViewById(R.id.parentalSection).setVisibility(View.VISIBLE);
             parentalChoice.setVisibility(View.VISIBLE);
             parentalChoice.setOnClickListener(v -> open(new Intent(this, ParentalActivity.class)));
-            if (Parental.hasPin(this) && !Parental.unlocked()) {
+            findViewById(R.id.extraChoice).setOnClickListener(v -> {
+                Parental.prefs(this).edit().remove(Parental.EXTRA_UNTIL).commit();
+                Parental.schedule(this);
+                updateExtraChoice();
+                parentalChoice.requestFocus();
+            });
+            if (Parental.pinNeeded(this)) {
                 View content = findViewById(android.R.id.content);
                 content.setVisibility(View.INVISIBLE);
                 PinDialog.ask(this, R.string.parental_enter_pin, () -> content.setVisibility(View.VISIBLE),
@@ -185,8 +192,25 @@ public final class LauncherSettingsActivity extends Activity {
             }
         }
         refresh();
-        if (config.launcherSettingsButton) reorderChoice.requestFocus();
+        // Fork: the first row is focused; parental controls are first when they are on.
+        if (Parental.enabled(this)) parentalChoice.requestFocus();
+        else if (config.launcherSettingsButton) reorderChoice.requestFocus();
         else columnChoices[Math.max(0, Math.min(columns - 4, 3))].requestFocus();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        updateExtraChoice();
+    }
+
+    /** Fork, parental controls: "End extra time (until 21:42)" while a parent's extra time runs. */
+    private void updateExtraChoice() {
+        TextView extraChoice = findViewById(R.id.extraChoice);
+        long extra = Parental.enabled(this) ? Parental.prefs(this).getLong(Parental.EXTRA_UNTIL, 0) : 0;
+        boolean on = extra > System.currentTimeMillis();
+        extraChoice.setVisibility(on ? View.VISIBLE : View.GONE);
+        if (on) extraChoice.setText(getString(R.string.parental_end_extra, Parental.hhmm(Parental.minuteOfDay(extra))));
     }
 
     private void reverseRow(TextView[] views) {

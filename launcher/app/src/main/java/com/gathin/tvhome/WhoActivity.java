@@ -77,6 +77,17 @@ public final class WhoActivity extends Activity {
         parent.setOnClickListener(v -> PinDialog.ask(this, R.string.parental_enter_pin,
                 () -> pick(Parental.PARENT), null));
         setContentView(scroll);
+        // Sign the current viewer out: back to "Who's watching?", and the next app asks again.
+        int current = Parental.viewer(p);
+        if (current != Parental.NOBODY) {
+            String who = current == Parental.PARENT ? getString(R.string.parental_parent) : Parental.kidName(p, current);
+            TextView exit = row(col, dp, getString(R.string.parental_sign_out, who));
+            ((LinearLayout.LayoutParams) exit.getLayoutParams()).topMargin = (int) (28 * dp);
+            exit.setOnClickListener(v -> {
+                Parental.setViewer(Parental.prefs(this), Parental.NOBODY);
+                finish();
+            });
+        }
         (first != null ? first : parent).requestFocus();
     }
 
@@ -105,9 +116,6 @@ public final class WhoActivity extends Activity {
     private void openPending() {
         String pkg = getIntent().getStringExtra(EXTRA_PKG);
         if (pkg == null || pkg.equals(Parental.INPUTS) || Parental.blockIfNotAllowed(this, pkg, false)) return;
-        if (Parental.prefs(this).getInt(Parental.VIEWER, Parental.NOBODY) == Parental.PARENT) {
-            Parental.prefs(this).edit().putBoolean(Parental.PARENT_USED_APP, true).apply();
-        }
         PackageManager pm = getPackageManager();
         Intent i = pm.getLeanbackLaunchIntentForPackage(pkg);
         if (i == null) i = pm.getLaunchIntentForPackage(pkg);

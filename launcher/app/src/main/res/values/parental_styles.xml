@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fork: styles for Launcher settings' sections. Kept in their own file so upstream's styles.xml merges cleanly. -->
+<resources>
+    <!-- A section heading: small, in the focus outline's green, with room above to separate it from the last row. -->
+    <style name="SettingsSection">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">40dp</item>
+        <item name="android:paddingBottom">8dp</item>
+        <item name="android:textColor">#FF9AD7B0</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.06</item>
+        <item name="android:background">@drawable/settings_section_rule</item>
+    </style>
+
+    <!-- The dimmed line under a row that says what it does. -->
+    <style name="SettingsHint">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">#FFACB8C1</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+</resources>

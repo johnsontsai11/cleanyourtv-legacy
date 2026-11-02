@@ -46,7 +46,7 @@ final class Parental {
             EXTRA_UNTIL = "extra_until", KID_IDS = "kid_ids", NEXT_KID = "next_kid",
             VIEWER = "viewer", VIEWER_WALL = "viewer_wall", VIEWER_ELAPSED = "viewer_elapsed",
             VIEWER_UPTIME = "viewer_uptime", SEGMENTS = "segments", WARNED = "warned",
-            PARENT_USED_APP = "parent_used_app", PIN_LEN = "pin_len";
+            PIN_LEN = "pin_len";
     /** Bedtime start when it is off. Minutes of the day otherwise. */
     static final int OFF = -1;
     static final int DEFAULT_BED_END = 7 * 60;
@@ -171,7 +171,7 @@ final class Parental {
 
     /** Runs `go` at once while no PIN is set or it was entered a moment ago; otherwise after the PIN. */
     static void withPin(Context c, Runnable go) {
-        if (!hasPin(c) || unlocked() || !(c instanceof Activity)) {
+        if (!pinNeeded(c) || !(c instanceof Activity)) {
             go.run();
             return;
         }
@@ -425,16 +425,15 @@ final class Parental {
 
 
 
-    /**
-     * Home is back: a parent's pick ends here, so a child taking the remote next is asked again instead of
-     * inheriting "no limits" for three hours. A child's pick carries on (VIEWER_MS, or until the TV sleeps).
-     */
-    static void endParentPick(Context c) {
-        if (!enabled(c)) return;
-        SharedPreferences p = prefs(c);
-        // Only once the parent has opened an app and come back: picking Parent from Home's pill returns to Home
-        // too, and must not end the pick it just made.
-        if (p.getInt(VIEWER, NOBODY) == PARENT && p.getBoolean(PARENT_USED_APP, false)) setViewer(p, NOBODY);
+    /** Parent is the one watching: nothing is blocked, and no PIN is asked (picking Parent took the PIN). */
+    static boolean parentWatching(Context c) {
+        return hasPin(c) && viewer(prefs(c)) == PARENT;
+    }
+
+    /** Whether opening something behind the PIN asks for it now: a PIN is set, it was not just entered, and no
+     *  parent is watching. */
+    static boolean pinNeeded(Context c) {
+        return hasPin(c) && !unlocked() && !parentWatching(c);
     }
 
     /**
@@ -451,7 +450,7 @@ final class Parental {
     static void setViewer(SharedPreferences p, int v) {
         long now = System.currentTimeMillis();
         String segs = pickSegment(p.getString(SEGMENTS, ""), v, now, Parental.startOfDay(now));
-        p.edit().putInt(VIEWER, v).putBoolean(PARENT_USED_APP, false).putLong(VIEWER_WALL, now).putLong(VIEWER_ELAPSED, SystemClock.elapsedRealtime())
+        p.edit().putInt(VIEWER, v).putLong(VIEWER_WALL, now).putLong(VIEWER_ELAPSED, SystemClock.elapsedRealtime())
                 .putLong(VIEWER_UPTIME, SystemClock.uptimeMillis()).putString(SEGMENTS, segs).commit();
         // commit, not apply: another process (Home's pill) reads the file next, so it must be on disk now.
     }
@@ -744,7 +743,6 @@ final class Parental {
         int s = st.state;
         if (s == FREE) {
             if (blockIfNotAllowed(c, pkg, false)) return false;
-            if (st.viewer == PARENT) prefs(c).edit().putBoolean(PARENT_USED_APP, true).apply();
             warnIfClose(c, st);
             schedule(c);
             return true;

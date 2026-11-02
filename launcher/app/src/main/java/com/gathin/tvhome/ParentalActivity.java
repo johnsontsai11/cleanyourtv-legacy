@@ -31,7 +31,7 @@ public final class ParentalActivity extends Activity {
 
     private SharedPreferences p;
     private float dp;
-    private TextView status, pinRow, bedRow, kidsTitle, extraRow, offRow;
+    private TextView status, pinRow, bedRow, kidsTitle, offRow;
     private LinearLayout kidsBox;
 
     @Override
@@ -68,11 +68,6 @@ public final class ParentalActivity extends Activity {
         kidsBox.setOrientation(LinearLayout.VERTICAL);
         col.addView(kidsBox);
 
-        extraRow = row(col, 18);
-        extraRow.setOnClickListener(v -> {
-            p.edit().remove(Parental.EXTRA_UNTIL).apply();
-            refresh();
-        });
         offRow = row(col, 36);
         offRow.setText(R.string.parental_turn_off);
         offRow.setOnClickListener(v -> new AlertDialog.Builder(this)
@@ -86,7 +81,7 @@ public final class ParentalActivity extends Activity {
                 .show());
 
         setContentView(scroll);
-        if (Parental.hasPin(this) && !Parental.unlocked()) {
+        if (Parental.pinNeeded(this)) {
             scroll.setVisibility(View.INVISIBLE);
             PinDialog.ask(this, R.string.parental_enter_pin, () -> {
                 scroll.setVisibility(View.VISIBLE);
@@ -473,9 +468,6 @@ public final class ParentalActivity extends Activity {
         add.setOnClickListener(v -> addKid());
         if (refocus) add.requestFocus();
 
-        long extra = p.getLong(Parental.EXTRA_UNTIL, 0);
-        extraRow.setText(getString(R.string.parental_end_extra, Parental.hhmm(Parental.minuteOfDay(extra))));
-        extraRow.setVisibility(extra > now ? View.VISIBLE : View.GONE);
         for (int i = 0; i < kidsBox.getChildCount(); i++) enable(kidsBox.getChildAt(i), pin);
         enable(bedRow, pin);
         enable(offRow, pin);

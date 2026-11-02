@@ -1381,7 +1381,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // Fork, parental controls: Home has the remote again, so the TV's settings ask for the PIN next time.
             // Focus, not onResume: Sony's settings is a translucent panel, and Home resumes behind it.
             Parental.lockAgain();
-            Parental.endParentPick(this);
             updateViewer();
             startPendingSettingsReorder();
             if (libraryFocusPending && appLibrary == null) focusLibrary();

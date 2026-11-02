@@ -64,4 +64,9 @@
     <string name="parental_color">背景顏色</string>
     <string name="parental_color_title">%1$s 的背景顏色</string>
     <string name="parental_pin_hint">用數字鍵盤或遙控器的數字鍵輸入</string>
+    <string name="parental_controls_row">密碼、就寢時間與孩子</string>
+    <string name="settings_section_home">主畫面</string>
+    <string name="settings_section_look">外觀</string>
+    <string name="settings_section_system">系統</string>
+    <string name="parental_sign_out">登出 %1$s</string>
 </resources>

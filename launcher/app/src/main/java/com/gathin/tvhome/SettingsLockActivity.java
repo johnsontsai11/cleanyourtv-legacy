@@ -35,7 +35,7 @@ public final class SettingsLockActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (Parental.unlocked() || !Parental.hasPin(this)) {
+        if (!Parental.pinNeeded(this)) {
             finish();
             return;
         }
