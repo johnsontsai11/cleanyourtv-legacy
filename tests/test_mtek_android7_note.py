@@ -117,9 +117,12 @@ class TheBuildStepsMatchTheLauncher(unittest.TestCase):
     def test_every_api_call_it_replaces_is_still_that_call_in_that_file(self):
         for name, (call, called, replacement) in API_CALLS.items():
             self.assertIn(name, self.java, f"the launcher no longer has {name}")
-            self.assertIn(call, self.java[name],
-                          f"{name} no longer makes the {call} call the note replaces; "
-                          "update the note's table")
+            # This minSdk 24 port has already made some of the note's replacements (WallpaperCaptions
+            # reads with BufferedReader, not toPath()), so a file may hold the replacement instead.
+            if call not in self.java[name]:
+                self.assertIn(replacement, self.java[name],
+                              f"{name} makes neither the {call} call the note replaces nor its "
+                              f"replacement {replacement}; update the note's table")
             self.assertIn(called, self.body, f"the note no longer names {called}")
             self.assertIn(name, self.body, f"the note no longer names {name}")
             self.assertIn(replacement, self.body,
