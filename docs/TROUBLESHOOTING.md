@@ -170,6 +170,18 @@ Things that bit us or contributors, so they don't bite you. Commands use `tools/
   from python.org instead. Windows 11 on ARM runs it, and 46.0.7 has a `win_amd64` wheel. Whether that floor can come down is
   [#2855](https://github.com/Gathin23/cleanyourtv/issues/2855)'s question for the maintainer, not a step
   in a cleanup.
+- **The TV lists only 2.4 GHz networks, and the router's 5 GHz one never shows up**, although the Wi-Fi
+  module is dual-band. `adb shell dumpsys wifi` reads `CurrentCountryCode is not initialized`, the
+  `Latest scan results` hold no frequency above 2.5 GHz (no 5 GHz network at all, not even a neighbour's),
+  and the kernel log reports the world regulatory domain (`COUNTRY=00`) when Wi-Fi reconnects. Android never
+  passed the TV's region (`persist.svp.country`) to the Wi-Fi driver, so many 5 GHz channels stayed off. Set
+  the country and restart the TV: `adb shell settings put global wifi_country_code TW` (your country's
+  two-letter code). Android 7 reads it once at boot, so switching Wi-Fi off and on is not enough; after the
+  restart `dumpsys wifi` reads `CurrentCountryCode TW`. If 5 GHz still does not appear, give the router's
+  5 GHz band a fixed channel (149 or 157, or 36 to 48), 20 to 80 MHz wide, a mode that includes 802.11ac,
+  WPA2 allowed and the name not hidden. Undo with `adb shell settings delete global wifi_country_code` and a
+  restart. Seen on a Sony BRAVIA 2015 (SVP-DTV15, MediaTek MT5890 with an MT7662U Wi-Fi module), Android 7.0,
+  firmware `NRD91N.S43 5.455`, region Taiwan, which then joined the router's 5 GHz network on channel 140.
 
 ## Working on the TV
 
