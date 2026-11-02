@@ -304,6 +304,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     };
     /** hidden_apps as the adapter sees them (config.xml or a theme's config.json): a hidden app gets no card either. */
     private Set<String> hiddenApps = Collections.emptySet();
+    /** Fork, parental controls: the profile pill, and who Home's tiles were last built for. */
+    private TextView btnViewer;
+    private String parentalHomeKey;
     /** library_excluded_apps: packages the App library catalogue never offers. */
     private Set<String> libraryExcludedApps = Collections.emptySet();
     private List<Cards.Card> cards = Collections.emptyList();
@@ -677,7 +680,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             public void onChildViewDetachedFromWindow(@NonNull View v) {
             }
         });
-        if (dockRow) grid.addItemDecoration(new DockDecoration(COLUMNS, density, cinematic, cfg.alwaysShowNames, cfg.dockOpacity, cfg.dockGlass, cfg.dockEvenPadding, cfg.dockBand,
+        // Fork: an opacity picked in Launcher settings applies to the cinematic shelf's band too. Upstream the
+        // cinematic band always kept its own glass, so the TV's 100/70/50/30 choice silently did nothing there.
+        // With no choice on the TV (or after Follow theme) the cinematic glass stays as the theme draws it.
+        boolean tvDockOpacity = getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE)
+                .contains(Config.DOCK_OPACITY_KEY);
+        if (dockRow) grid.addItemDecoration(new DockDecoration(COLUMNS, density, cinematic && !tvDockOpacity, cfg.alwaysShowNames, cfg.dockOpacity, cfg.dockGlass, cfg.dockEvenPadding, cfg.dockBand,
                 singleRow, cfg.dockBandAll));
         if (cfg.fadeRows) TopFade.attach(grid, 48 * density);
         // Reduced motion: the tiles are simply there, with no entrance (reloadApps skips it there too).
@@ -809,6 +817,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
 
         btnInputs = findViewById(R.id.btnInputs);
+        // Fork, parental controls: the profile pill.
+        btnViewer = findViewById(R.id.btnViewer);
+        registerScreenReceiver();
+        btnViewer.setOnClickListener(v -> startActivity(WhoActivity.intent(this, null)));
         View btnSettings = findViewById(R.id.btnSettings);
         btnInputs.setOnClickListener(v -> showInputs());
         btnWifi.setOnClickListener(v -> openNetworkPill());
@@ -897,12 +909,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 focusTile(singleRow ? lastFocused : lastFocused % COLUMNS);
                 return true;
             }
-            int firstButton = btnInputs.getVisibility() == View.VISIBLE ? R.id.btnInputs : firstTopButton().getId();
+            // Fork, parental controls: the profile pill comes before Inputs, so it is the bar's end when shown.
+            int firstButton = btnViewer.getVisibility() == View.VISIBLE ? R.id.btnViewer
+                    : btnInputs.getVisibility() == View.VISIBLE ? R.id.btnInputs : firstTopButton().getId();
             int leftButton = rtlMenuBar ? R.id.btnSettings : firstButton;
             int rightButton = rtlMenuBar ? firstButton : R.id.btnSettings;
             if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) return v.getId() == leftButton;
             return keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && v.getId() == rightButton;
         };
+        btnViewer.setOnKeyListener(pillKeys);
         btnInputs.setOnKeyListener(pillKeys);
         btnWifi.setOnKeyListener(pillKeys);
         btnVpn.setOnKeyListener(pillKeys);
@@ -911,7 +926,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnLibraryTop.setOnKeyListener(pillKeys);
         for (View button : topAppButtons) button.setOnKeyListener(pillKeys);
         if (advancedEffects) {
-            List<View> pills = new ArrayList<>(Arrays.asList(btnInputs, btnWifi, btnVpn, btnReorder, btnLibraryTop, btnSettings));
+            List<View> pills = new ArrayList<>(Arrays.asList(btnViewer, btnInputs, btnWifi, btnVpn, btnReorder, btnLibraryTop, btnSettings));
             pills.addAll(topAppButtons);
             for (View button : pills) {
                 button.setOnFocusChangeListener((view, focused) -> view.animate()
@@ -1078,6 +1093,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     protected void onResume() {
         super.onResume();
         resumed = true;
+        Parental.schedule(this);
+        updateViewer();
+        // Waking the TV resumes Home and sends "screen on" at about the same time; look again once the pick is
+        // cleared (Parental.onScreenOn), so the pill does not keep showing whoever watched before standby.
+        handler.postDelayed(this::updateViewer, 1500);
         // A festival that started or ended while Home was in the background: rebuild with or without it.
         if (festive != festival.active(LocalDate.now())) {
             recreate();
@@ -1358,6 +1378,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
         if (hasFocus) {
+            // Fork, parental controls: Home has the remote again, so the TV's settings ask for the PIN next time.
+            // Focus, not onResume: Sony's settings is a translucent panel, and Home resumes behind it.
+            Parental.lockAgain();
+            Parental.endParentPick(this);
+            updateViewer();
             startPendingSettingsReorder();
             if (libraryFocusPending && appLibrary == null) focusLibrary();
             showCardPrompt();
@@ -3282,13 +3307,53 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
     }
 
+    /**
+     * Fork, parental controls: the TV going to standby or waking clears the pick ("Who's watching?"). Registered
+     * once on the application context, so it lives as long as Home's process; SettingsGuardService does the same
+     * while it runs. Sony's standby keeps the CPU awake, so Parental's clock check alone does not notice it.
+     */
+    private static boolean screenReceiverRegistered;
+
+    private void registerScreenReceiver() {
+        if (screenReceiverRegistered || !Parental.enabled(this)) return;
+        screenReceiverRegistered = true;
+        IntentFilter power = new IntentFilter(Intent.ACTION_SCREEN_OFF);
+        power.addAction(Intent.ACTION_SCREEN_ON);
+        getApplicationContext().registerReceiver(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context c, Intent intent) {
+                Parental.onScreenOn(c);
+            }
+        }, power);
+    }
+
+    /** Fork, parental controls: the pill shows who is watching; a new viewer gets their own allowed apps. */
+    private void updateViewer() {
+        if (btnViewer == null) return;
+        String label = Parental.viewerLabel(this);
+        btnViewer.setVisibility(label == null ? View.GONE : View.VISIBLE);
+        if (label != null) {
+            btnViewer.setText(label);
+            // The child's avatar (emoji on their colour) stands in for the person icon.
+            android.graphics.drawable.Drawable avatar = Parental.viewerAvatar(this, (int) (26 * density));
+            if (avatar != null) btnViewer.setCompoundDrawablesRelative(avatar, null, null, null);
+            else btnViewer.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_person, 0, 0, 0);
+        }
+        String key = Parental.homeKey(this);
+        if (parentalHomeKey != null && !parentalHomeKey.equals(key)) reloadApps(false, true);
+        parentalHomeKey = key;
+    }
+
     private void open(Intent i) {
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        try {
-            startActivity(i);
-        } catch (ActivityNotFoundException | SecurityException e) {
-            Toast.makeText(this, R.string.not_available, Toast.LENGTH_SHORT).show();
-        }
+        // Fork, parental controls: system settings behind the PIN, apps behind bedtime and the daily limit.
+        Parental.guard(this, i, () -> {
+            try {
+                startActivity(i);
+            } catch (ActivityNotFoundException | SecurityException e) {
+                Toast.makeText(this, R.string.not_available, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     /** `input_sources` in config.xml or a theme: "HW5=23" maps the framework input whose id ends in /HW5 to a vendor
@@ -3310,6 +3375,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      *  throws SecurityException, which used to take Home down with it (YaOS before the manifest asked
      *  for ACCESS_TV_SOURCE). */
     private void openInput(String inputId) {
+        if (!Parental.allowApp(this, liveTvPkg.isEmpty() ? Parental.INPUTS : liveTvPkg)) return;
         // A CEC device is a child input of its HDMI port; the vendor source number belongs to the port
         // (MiTV-MFFU0). Only that lookup uses the parent: the generic path below still opens the child.
         String sourceId = inputId;

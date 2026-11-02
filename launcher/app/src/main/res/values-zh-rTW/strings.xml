@@ -97,4 +97,20 @@
     <string name="clock_format_system">系統</string>
     <string name="clock_format_12">12 小時制</string>
     <string name="clock_format_24">24 小時制</string>
+    <string name="rows_below_dock_label">Dock 下方列數</string>
+    <string name="wallpaper_label">桌布</string>
+    <string name="wallpaper_state">桌布：%1$s</string>
+    <string name="wallpaper_none">無</string>
+    <string name="wallpaper_applied">已更換桌布</string>
+    <string name="wallpaper_theme_default">主題預設</string>
+    <string name="quick_picture">顯示</string>
+    <string name="quick_network">網路</string>
+    <string name="quick_apps">應用程式</string>
+    <string name="quick_apps_hint">重新啟用</string>
+    <string name="good_forenoon">早安</string>
+    <string name="festival_dussehra_greeting">十勝節快樂</string>
+    <string name="festival_diwali_greeting">排燈節快樂</string>
+    <string name="festival_halloween_greeting">萬聖節快樂</string>
+    <string name="storage_gb_whole">%1$.0f GB</string>
+    <string name="storage_gb_decimal">%1$.1f GB</string>
 </resources>

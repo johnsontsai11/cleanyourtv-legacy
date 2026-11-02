@@ -75,14 +75,14 @@ public final class QuickSettingsActivity extends Activity {
         TextView hint = row.findViewById(R.id.status);
         if (status != 0) hint.setText(status);
         else hint.setVisibility(View.GONE);
-        row.setOnClickListener(v -> {
+        row.setOnClickListener(v -> Parental.guard(this, target, () -> {
             try {
                 startActivity(target.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             } catch (ActivityNotFoundException | SecurityException e) {
                 Toast.makeText(this, R.string.not_available, Toast.LENGTH_SHORT).show();
             }
             finish();
-        });
+        }));
         rows.addView(row);
     }
 }

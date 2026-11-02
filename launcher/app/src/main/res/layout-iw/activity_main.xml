@@ -393,6 +393,17 @@
                     android:text="@string/inputs"
                     android:drawableStart="@drawable/ic_input"
                     android:nextFocusDown="@+id/grid" />
+
+                <!-- Fork, parental controls: who is watching (mirrored: last in this right-to-left row). -->
+                <TextView
+                    android:id="@+id/btnViewer"
+                    style="@style/TopButton"
+                    android:visibility="gone"
+                    android:maxWidth="200dp"
+                    android:singleLine="true"
+                    android:ellipsize="end"
+                    android:drawableStart="@drawable/ic_person"
+                    android:nextFocusDown="@+id/grid" />
             </LinearLayout>
         </RelativeLayout>
 

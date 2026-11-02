@@ -172,6 +172,18 @@ public final class LauncherSettingsActivity extends Activity {
                 open(new Intent(this, HomeSettingsActivity.class)));
         findViewById(R.id.tvSettingsChoice).setOnClickListener(v ->
                 open(SystemSettings.intent(this, Settings.ACTION_SETTINGS)));
+        // Fork, parental controls: the row, and these settings behind the PIN once one is set.
+        View parentalChoice = findViewById(R.id.parentalChoice);
+        if (Parental.enabled(this)) {
+            parentalChoice.setVisibility(View.VISIBLE);
+            parentalChoice.setOnClickListener(v -> open(new Intent(this, ParentalActivity.class)));
+            if (Parental.hasPin(this) && !Parental.unlocked()) {
+                View content = findViewById(android.R.id.content);
+                content.setVisibility(View.INVISIBLE);
+                PinDialog.ask(this, R.string.parental_enter_pin, () -> content.setVisibility(View.VISIBLE),
+                        this::finish);
+            }
+        }
         refresh();
         if (config.launcherSettingsButton) reorderChoice.requestFocus();
         else columnChoices[Math.max(0, Math.min(columns - 4, 3))].requestFocus();

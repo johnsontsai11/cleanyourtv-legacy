@@ -64,6 +64,10 @@ QUERIES_PACKAGE = re.compile(r'<package\s+android:name="([^"]+)"')
 EXEMPT = {
     "latitude": "docs/sky.md: the sky's place, a build setting no theme can move",
     "longitude": "docs/sky.md: the sky's place, a build setting no theme can move",
+    # Fork: parental controls are set per TV in config.xml and on the TV, not by a theme.
+    "parental_controls": "docs/parental-controls.md: a per-TV switch, set in config.xml",
+    "parental_exempt_apps": "docs/parental-controls.md: a per-TV list, set in config.xml",
+    "parental_locked_settings": "docs/parental-controls.md: a per-TV list, set in config.xml",
 }
 
 
@@ -250,13 +254,21 @@ class KeysTableCoversConfigXmlTest(unittest.TestCase):
     def test_the_exemption_is_still_right(self):
         # latitude and longitude stay out of the table (tests/test_sky_place_note.py requires it), so
         # they may only stay out while they are what that page describes: config.xml lines SkyView reads.
+        # Fork: the parental-controls keys are read by Parental.java (docs/parental-controls.md).
         config = config_keys(self.config)
-        sky = SKY_VIEW.read_text(encoding="utf-8")
+        read_by = {
+            "latitude": (SKY_VIEW, "R.string.latitude"),
+            "longitude": (SKY_VIEW, "R.string.longitude"),
+            "parental_controls": (JAVA_DIR / "Parental.java", "R.bool.parental_controls"),
+            "parental_exempt_apps": (JAVA_DIR / "Parental.java", "R.array.parental_exempt_apps"),
+            "parental_locked_settings": (JAVA_DIR / "Parental.java", "R.array.parental_locked_settings"),
+        }
         for name in EXEMPT:
             with self.subTest(key=name):
                 self.assertIn(name, config, f"`{name}` is gone from config.xml: drop its EXEMPT entry")
-                self.assertIn(f"R.string.{name}", sky, f"SkyView.java no longer reads `{name}`: is the "
-                                                      f"docs/sky.md page still right?")
+                source, ref = read_by[name]
+                self.assertIn(ref, source.read_text(encoding="utf-8"),
+                              f"{source.name} no longer reads `{name}`: is {EXEMPT[name].split(':')[0]} still right?")
                 self.assertNotIn(name, table_keys(self.text),
                                  f"`{name}` is in the Keys table now: drop its EXEMPT entry")
 

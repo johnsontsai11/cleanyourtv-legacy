@@ -1,0 +1,191 @@
+package com.gathin.tvhome;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class ParentalTest {
+    private static final long MIN = 60_000L;
+
+    @Test
+    public void bedtimeWindowRunsPastMidnight() {
+        int start = 21 * 60, end = 7 * 60;
+        assertTrue(Parental.inWindow(21 * 60, start, end));
+        assertTrue(Parental.inWindow(23 * 60 + 59, start, end));
+        assertTrue(Parental.inWindow(0, start, end));
+        assertTrue(Parental.inWindow(6 * 60 + 59, start, end));
+        assertFalse(Parental.inWindow(7 * 60, start, end));
+        assertFalse(Parental.inWindow(20 * 60 + 59, start, end));
+    }
+
+    @Test
+    public void sameDayWindowAndOff() {
+        assertTrue(Parental.inWindow(13 * 60, 12 * 60, 14 * 60));
+        assertFalse(Parental.inWindow(14 * 60, 12 * 60, 14 * 60));
+        assertFalse(Parental.inWindow(13 * 60, Parental.OFF, 14 * 60));
+        assertFalse(Parental.inWindow(13 * 60, 600, 600));
+    }
+
+    @Test
+    public void stateOrderExtraTimeThenBedtimeThenLimit() {
+        long now = 1_000_000;
+        assertEquals(Parental.FREE, Parental.state(600, 0, now, Parental.OFF, 420, 0, 0));
+        assertEquals(Parental.BEDTIME, Parental.state(22 * 60, 0, now, 21 * 60, 420, 60, 0));
+        assertEquals(Parental.LIMIT_REACHED, Parental.state(600, 60 * MIN, now, 21 * 60, 420, 60, 0));
+        assertEquals(Parental.FREE, Parental.state(600, 59 * MIN, now, 21 * 60, 420, 60, 0));
+        assertEquals(Parental.FREE, Parental.state(22 * 60, 99 * MIN, now, 21 * 60, 420, 60, now + 1));
+    }
+
+    @Test
+    public void usedCountsOnlyCountedAppsFromMidnight() {
+        // Netflix since 23:30 the day before, Home at 00:10, YouTube 00:20 to 00:50, the launcher again.
+        long day = 100 * 24 * 60 * MIN;
+        long[] t = {day - 30 * MIN, day + 10 * MIN, day + 10 * MIN, day + 20 * MIN, day + 20 * MIN, day + 50 * MIN};
+        String[] p = {"netflix", "netflix", "home", "home", "youtube", "youtube"};
+        int[] ty = {1, 2, 1, 2, 1, 2};
+        String[] front = new String[1];
+        long used = Parental.used(t, p, ty, t.length, day, day + 60 * MIN, pkg -> !pkg.equals("home"), front, null);
+        assertEquals(40 * MIN, used);
+        assertNull(front[0]);
+    }
+
+    @Test
+    public void appStillInFrontCountsUntilNow() {
+        long[] t = {0, 5 * MIN};
+        String[] p = {"youtube", "netflix"};
+        int[] ty = {1, 1};
+        String[] front = new String[1];
+        long used = Parental.used(t, p, ty, 2, 0, 20 * MIN, pkg -> true, front, null);
+        assertEquals(20 * MIN, used);
+        assertEquals("netflix", front[0]);
+    }
+
+    @Test
+    public void backgroundOfAnEarlierActivityDoesNotEndTheNewApp() {
+        // B comes to the front before A's background event arrives.
+        long[] t = {0, 10 * MIN, 10 * MIN};
+        String[] p = {"a", "b", "a"};
+        int[] ty = {1, 1, 2};
+        String[] front = new String[1];
+        assertEquals(30 * MIN, Parental.used(t, p, ty, 3, 0, 30 * MIN, pkg -> true, front, null));
+        assertEquals("b", front[0]);
+    }
+
+    @Test
+    public void pinRulesAndHash() {
+        assertTrue(Parental.validPin("1234"));
+        assertTrue(Parental.validPin("12345678"));
+        assertFalse(Parental.validPin("123"));
+        assertFalse(Parental.validPin("123456789"));
+        assertFalse(Parental.validPin("12a4"));
+        assertEquals(Parental.hash("s", "1234"), Parental.hash("s", "1234"));
+        assertNotEquals(Parental.hash("s", "1234"), Parental.hash("t", "1234"));
+        assertEquals("21:00", Parental.hhmm(21 * 60));
+        assertEquals("07:30", Parental.hhmm(7 * 60 + 30));
+    }
+    @Test
+    public void eachChildIsChargedOnlyForTheTimeTheyWerePicked() {
+        // Child 1 picked at 0, child 2 at 30 min, nobody (a parent) at 50 min; an app in front 10 to 60 min.
+        long day = 0;
+        String segs = Parental.pickSegment("", 1, 0, day);
+        segs = Parental.pickSegment(segs, 2, 30 * MIN, day);
+        segs = Parental.pickSegment(segs, Parental.PARENT, 50 * MIN, day);
+        List<long[]> intervals = new ArrayList<>();
+        long total = Parental.used(new long[]{10 * MIN, 60 * MIN}, new String[]{"tv", "tv"}, new int[]{1, 2}, 2,
+                day, 70 * MIN, pkg -> true, null, intervals);
+        assertEquals(50 * MIN, total);
+        List<long[]> parsed = Parental.parseSegments(segs);
+        assertEquals(20 * MIN, Parental.usedBy(1, intervals, parsed, 70 * MIN));
+        assertEquals(20 * MIN, Parental.usedBy(2, intervals, parsed, 70 * MIN));
+    }
+
+    @Test
+    public void anOpenPickRunsUntilNow() {
+        String segs = Parental.pickSegment("", 3, 0, 0);
+        List<long[]> intervals = new ArrayList<>();
+        intervals.add(new long[]{5 * MIN, 25 * MIN});
+        assertEquals(15 * MIN, Parental.usedBy(3, intervals, Parental.parseSegments(segs), 20 * MIN));
+    }
+
+    @Test
+    public void yesterdaysPicksAreDropped() {
+        long day = 1000 * MIN;
+        String segs = Parental.pickSegment("", 1, day - 100 * MIN, 0);
+        segs = Parental.pickSegment(segs, 2, day - 50 * MIN, 0);
+        // Child 2's pick runs past midnight and is kept; child 1's ended before it.
+        segs = Parental.pickSegment(segs, 1, day + 10 * MIN, day);
+        List<long[]> parsed = Parental.parseSegments(segs);
+        assertEquals(2, parsed.size());
+        assertEquals(2, parsed.get(0)[0]);
+        assertEquals(1, parsed.get(1)[0]);
+        assertEquals(0, parsed.get(1)[2]);
+    }
+
+    @Test
+    public void aPickEndsWhenTheTvSleptAfterThreeHoursOrAReboot() {
+        // Awake for an hour: still the same viewer.
+        assertFalse(Parental.pickEnded(60 * MIN, 60 * MIN, 60 * MIN, 0, 0, 0));
+        // Three hours later.
+        assertTrue(Parental.pickEnded(180 * MIN, 180 * MIN, 180 * MIN, 0, 0, 0));
+        // Elapsed ran 30 minutes ahead of uptime: the TV was asleep.
+        assertTrue(Parental.pickEnded(40 * MIN, 40 * MIN, 10 * MIN, 0, 0, 0));
+        // Elapsed went backwards: a reboot.
+        assertTrue(Parental.pickEnded(10 * MIN, 1 * MIN, 1 * MIN, 0, 5 * MIN, 5 * MIN));
+    }
+
+    @Test
+    public void aWeekOfLimitsReadsAsOneNumberWeekdaysAndWeekendOrByDay() {
+        // Index 0 is Sunday, as Calendar.DAY_OF_WEEK - 1.
+        assertEquals(Parental.SAME_EVERY_DAY, Parental.weekShape(new int[]{60, 60, 60, 60, 60, 60, 60}));
+        assertEquals(Parental.WEEKDAYS_AND_WEEKEND, Parental.weekShape(new int[]{120, 60, 60, 60, 60, 60, 120}));
+        assertEquals(Parental.BY_DAY, Parental.weekShape(new int[]{120, 60, 60, 90, 60, 60, 120}));
+        assertEquals(Parental.BY_DAY, Parental.weekShape(new int[]{120, 60, 60, 60, 60, 60, 90}));
+    }
+
+    @Test
+    public void theLockComesFromTheLimitOrBedtimeWhicheverIsSooner() {
+        long now = 1_000 * MIN;
+        // 10 minutes left, bedtime in 30: the limit.
+        assertEquals(10 * MIN, Parental.untilLock(now, 10 * MIN, now + 30 * MIN, 0, false));
+        // 40 minutes left, bedtime in 30: bedtime.
+        assertEquals(30 * MIN, Parental.untilLock(now, 40 * MIN, now + 30 * MIN, 0, false));
+        // No limit, no bedtime: nothing is coming.
+        assertEquals(-1, Parental.untilLock(now, -1, 0, 0, false));
+        // No limit, bedtime in 5.
+        assertEquals(5 * MIN, Parental.untilLock(now, -1, now + 5 * MIN, 0, false));
+    }
+
+    @Test
+    public void extraTimeLocksAtItsEndOnlyWhenARuleIsWaiting() {
+        long now = 1_000 * MIN;
+        assertEquals(15 * MIN, Parental.untilLock(now, 0, now + 60 * MIN, now + 15 * MIN, true));
+        assertEquals(-1, Parental.untilLock(now, 0, now + 60 * MIN, now + 15 * MIN, false));
+    }
+
+    @Test
+    public void noListAllowsEveryAppAndAListOnlyItsOwn() {
+        assertTrue(Parental.allowedFor(null, "com.netflix.ninja"));
+        java.util.Set<String> list = new java.util.HashSet<>(java.util.Arrays.asList("com.google.android.youtube.tvkids"));
+        assertTrue(Parental.allowedFor(list, "com.google.android.youtube.tvkids"));
+        assertFalse(Parental.allowedFor(list, "com.netflix.ninja"));
+    }
+
+    @Test
+    public void aTvThatWasOffIsToldApartFromATimedOutPick() {
+        // Awake the whole hour: the pick goes on.
+        assertEquals(Parental.PICK_GOES_ON, Parental.pickEnd(60 * MIN, 60 * MIN, 60 * MIN, 0, 0, 0));
+        // Awake three hours on one pick: timed out, ask again.
+        assertEquals(Parental.PICK_TIMED_OUT, Parental.pickEnd(180 * MIN, 180 * MIN, 180 * MIN, 0, 0, 0));
+        // Thirty minutes of deep sleep in between: the TV was off.
+        assertEquals(Parental.PICK_TV_WAS_OFF, Parental.pickEnd(40 * MIN, 40 * MIN, 10 * MIN, 0, 0, 0));
+        // Elapsed went backwards: a reboot, even long after the pick.
+        assertEquals(Parental.PICK_TV_WAS_OFF, Parental.pickEnd(500 * MIN, 1 * MIN, 1 * MIN, 0, 5 * MIN, 5 * MIN));
+    }
+}

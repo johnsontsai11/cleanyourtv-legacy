@@ -29,6 +29,13 @@
             android:visibility="gone" />
 
         <TextView
+            android:id="@+id/parentalChoice"
+            style="@style/SettingsRow"
+            android:layout_marginTop="18dp"
+            android:text="@string/parental_controls"
+            android:visibility="gone" />
+
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="28dp"

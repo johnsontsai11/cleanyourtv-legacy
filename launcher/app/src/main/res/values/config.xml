@@ -32,6 +32,27 @@
         <item>com.sony.dtv.tvx</item>
     </string-array>
 
+    <!-- Fork: parental controls. Adds Launcher settings > Parental controls (PIN, bedtime, daily limit) and puts
+         Launcher settings and the TV's system settings behind the PIN once one is set. false hides the row and
+         nothing of it runs. Counting time needs usage access, granted once over ADB:
+         adb shell appops set com.gathin.tvhome GET_USAGE_STATS allow -->
+    <bool name="parental_controls">true</bool>
+    <!-- Apps bedtime and the daily limit never block (an education app, a music app). The launcher, system UI and
+         the system settings are always exempt; the settings are behind the PIN instead. -->
+    <string-array name="parental_exempt_apps">
+    </string-array>
+    <!-- The TV's settings apps, locked behind the parental PIN once one is set: from the launcher, and from any
+         other route (the remote's Settings button, the Action Menu) once SettingsGuardService is switched on.
+         Whatever answers ACTION_SETTINGS is added on the TV. Bedtime and the limits never count these. -->
+    <string-array name="parental_locked_settings">
+        <item>com.android.tv.settings</item>
+        <item>com.android.settings</item>
+        <item>com.sony.dtv.networksettings</item>
+        <item>com.sony.dtv.b2b.prosettings</item>
+        <item>com.sony.dtv.shopsettings</item>
+        <item>com.sony.dtv.quicksetup</item>
+    </string-array>
+
     <!-- The TV's Live TV / tuner app, offered at the end of the Inputs menu. Leave empty to omit. -->
     <string name="live_tv_package" translatable="false">com.sony.dtv.tvx</string>
 
@@ -255,7 +276,8 @@
     <bool name="lunar_date">false</bool>
     <!-- The date (with the Shamsi and lunar lines) on its own line under the clock instead of beside it, for a top bar
          whose pills leave the date too little room. Can also be set with "date_below_clock" in a theme. -->
-    <bool name="date_below_clock">false</bool>
+    <!-- This TV: on, so the profile pill (parental controls) leaves the date room to show in full. -->
+    <bool name="date_below_clock">true</bool>
     <!-- The language the launcher shows itself in, as a language tag ("vi", "pt-BR", "ar-EG-u-nu-latn"
          for Arabic with Western digits), instead of the TV's. For firmware
          that has no menu entry for the owner's language although the launcher is translated into it (a China-market
@@ -290,7 +312,9 @@
     <bool name="top_menu">false</bool>
     <!-- A direct Launcher settings action instead of TV Settings in the header (or top_menu).
          Off by default; a theme can set "launcher_settings_button": true. -->
-    <bool name="launcher_settings_button">false</bool>
+    <!-- This TV: on, so the Settings pill opens Launcher settings (Parental controls at the top, behind the PIN)
+         and the TV's system settings are one row inside it. -->
+    <bool name="launcher_settings_button">true</bool>
     <!-- The dock band as light frosted glass, like the Inputs, Wi-Fi and Settings pills, so a sky or wallpaper shows
          through it. false (the default) keeps the solid near-black band, or the cinematic shelf's dark glass. Can
          also be set with "dock_glass": true in a theme's config.json. -->

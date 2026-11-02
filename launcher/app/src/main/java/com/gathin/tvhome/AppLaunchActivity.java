@@ -15,7 +15,7 @@ public class AppLaunchActivity extends Activity {
         try {
             Uri data = getIntent().getData();
             String pkg = data == null ? null : data.getQueryParameter("id");
-            if (pkg != null) {
+            if (pkg != null && Parental.allowApp(this, pkg)) {
                 Intent launch = getPackageManager().getLeanbackLaunchIntentForPackage(pkg);
                 if (launch == null) launch = getPackageManager().getLaunchIntentForPackage(pkg);
                 if (launch != null) startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));

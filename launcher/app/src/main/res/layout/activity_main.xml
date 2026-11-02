@@ -332,6 +332,17 @@
                 android:clipToPadding="false"
                 android:orientation="horizontal">
 
+                <!-- Fork, parental controls: who is watching; opens the picker. Shown only with children set up. -->
+                <TextView
+                    android:id="@+id/btnViewer"
+                    style="@style/TopButton"
+                    android:visibility="gone"
+                    android:maxWidth="200dp"
+                    android:singleLine="true"
+                    android:ellipsize="end"
+                    android:drawableStart="@drawable/ic_person"
+                    android:nextFocusDown="@+id/grid" />
+
                 <TextView
                     android:id="@+id/btnInputs"
                     style="@style/TopButton"
