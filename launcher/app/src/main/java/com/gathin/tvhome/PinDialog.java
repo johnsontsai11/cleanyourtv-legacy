@@ -54,7 +54,7 @@ final class PinDialog {
         }, cancel);
     }
 
-    /** Asks for a child's profile password (the parental PIN works too); `ok` runs after the right one. */
+    /** Asks for a child's profile PIN (the parental PIN works too); `ok` runs after the right one. */
     static void askKid(Activity a, int kid, Runnable ok, Runnable cancel) {
         open(a, a.getString(R.string.parental_enter_kid_password, Parental.kidName(Parental.prefs(a), kid)),
                 Parental.kidPasswordLength(Parental.prefs(a), kid), (pin, card) -> {
@@ -67,7 +67,7 @@ final class PinDialog {
         }, cancel);
     }
 
-    /** Asks for a new 4-digit password for a child's profile twice and saves it; `done` runs once saved. */
+    /** Asks for a new 4-digit PIN for a child's profile twice and saves it; `done` runs once saved. */
     static void createKid(Activity a, int kid, Runnable done) {
         String[] first = new String[1];
         open(a, a.getString(R.string.parental_new_kid_password), Parental.PIN_DIGITS, (pin, card) -> {

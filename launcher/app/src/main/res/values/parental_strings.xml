@@ -32,11 +32,11 @@
     <string name="parental_kid_name">Child\'s name</string>
     <string name="parental_kid_row">%1$s: %2$s a day</string>
     <string name="parental_kid_limit_title">Daily limit for %1$s</string>
-    <string name="parental_enter_kid_password">%1$s\'s password</string>
-    <string name="parental_new_kid_password">Choose a 4-digit password for this profile</string>
-    <string name="parental_kid_password_saved">Profile password saved</string>
-    <string name="parental_kid_password_set">Set a profile password</string>
-    <string name="parental_kid_password_remove">Remove the profile password</string>
+    <string name="parental_enter_kid_password">%1$s\'s PIN</string>
+    <string name="parental_new_kid_password">Choose a 4-digit PIN for this profile</string>
+    <string name="parental_kid_password_saved">Profile PIN saved</string>
+    <string name="parental_kid_password_set">Set a profile PIN</string>
+    <string name="parental_kid_password_remove">Remove the profile PIN</string>
     <string name="parental_rename">Rename</string>
     <string name="parental_remove_kid">Remove %1$s</string>
     <string name="parental_unlimited">No limit</string>
