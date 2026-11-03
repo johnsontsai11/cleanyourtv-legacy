@@ -54,6 +54,42 @@ final class PinDialog {
         }, cancel);
     }
 
+    /** Asks for a child's profile password (the parental PIN works too); `ok` runs after the right one. */
+    static void askKid(Activity a, int kid, Runnable ok, Runnable cancel) {
+        open(a, a.getString(R.string.parental_enter_kid_password, Parental.kidName(Parental.prefs(a), kid)),
+                Parental.kidPasswordLength(Parental.prefs(a), kid), (pin, card) -> {
+            if (Parental.checkKidPassword(a, kid, pin)) {
+                card.close();
+                ok.run();
+                return null;
+            }
+            return a.getString(Parental.coolingDown() ? R.string.parental_wait : R.string.parental_wrong_pin);
+        }, cancel);
+    }
+
+    /** Asks for a new 4-digit password for a child's profile twice and saves it; `done` runs once saved. */
+    static void createKid(Activity a, int kid, Runnable done) {
+        String[] first = new String[1];
+        open(a, a.getString(R.string.parental_new_kid_password), Parental.PIN_DIGITS, (pin, card) -> {
+            if (first[0] == null) {
+                first[0] = pin;
+                card.retitle(a.getString(R.string.parental_confirm_pin));
+                return "";
+            }
+            if (!first[0].equals(pin)) {
+                first[0] = null;
+                card.retitle(a.getString(R.string.parental_new_kid_password));
+                return a.getString(R.string.parental_pin_mismatch);
+            }
+            Parental.setKidPassword(a, kid, pin);
+            card.close();
+            android.widget.Toast.makeText(a, R.string.parental_kid_password_saved,
+                    android.widget.Toast.LENGTH_SHORT).show();
+            done.run();
+            return null;
+        }, null);
+    }
+
     /** Asks for a new 4-digit PIN twice, in the same card, and saves it; `done` runs once it is saved. */
     static void create(Activity a, Runnable done) {
         String[] first = new String[1];

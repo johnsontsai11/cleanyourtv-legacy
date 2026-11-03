@@ -129,6 +129,49 @@ final class Parental {
         return ok;
     }
 
+    // ---- Profile passwords ----
+
+    /** Whether this child's profile has its own password (opt-in, set by a parent). */
+    static boolean kidHasPassword(SharedPreferences p, int id) {
+        return p.contains("kid_" + id + "_pw");
+    }
+
+    static void setKidPassword(Context c, int id, String pin) {
+        byte[] salt = new byte[16];
+        new SecureRandom().nextBytes(salt);
+        String s = hex(salt);
+        prefs(c).edit().putString("kid_" + id + "_pw_salt", s).putString("kid_" + id + "_pw", hash(s, pin))
+                .putInt("kid_" + id + "_pw_len", pin.length()).apply();
+    }
+
+    static void clearKidPassword(SharedPreferences p, int id) {
+        p.edit().remove("kid_" + id + "_pw").remove("kid_" + id + "_pw_salt").remove("kid_" + id + "_pw_len").apply();
+    }
+
+    static int kidPasswordLength(SharedPreferences p, int id) {
+        return p.getInt("kid_" + id + "_pw_len", PIN_DIGITS);
+    }
+
+    /**
+     * True for the child's password, or for the parental PIN (a parent can always get into a profile). Wrong tries
+     * share the PIN's counter, so guessing locks for a minute after MAX_TRIES. Does not open the TV's settings.
+     */
+    static boolean checkKidPassword(Context c, int id, String pw) {
+        long now = SystemClock.elapsedRealtime();
+        if (now < coolUntil) return false;
+        SharedPreferences p = prefs(c);
+        boolean ok = pw != null && (hash(p.getString("kid_" + id + "_pw_salt", ""), pw)
+                .equals(p.getString("kid_" + id + "_pw", null))
+                || hash(p.getString(SALT, ""), pw).equals(p.getString(PIN, null)));
+        if (ok) {
+            wrongTries = 0;
+        } else if (++wrongTries >= MAX_TRIES) {
+            wrongTries = 0;
+            coolUntil = now + COOL_DOWN_MS;
+        }
+        return ok;
+    }
+
     static boolean coolingDown() {
         return SystemClock.elapsedRealtime() < coolUntil;
     }
@@ -287,7 +330,8 @@ final class Parental {
         SharedPreferences.Editor e = p.edit().putString(KID_IDS, join(ids))
                 .remove("kid_" + id + "_name").remove("kid_" + id + "_limit");
         for (int d = 1; d <= 7; d++) e.remove("kid_" + id + "_limit_d" + d);
-        e.remove("kid_" + id + "_apps").remove("kid_" + id + "_emoji").remove("kid_" + id + "_color");
+        e.remove("kid_" + id + "_apps").remove("kid_" + id + "_emoji").remove("kid_" + id + "_color")
+                .remove("kid_" + id + "_pw").remove("kid_" + id + "_pw_salt").remove("kid_" + id + "_pw_len");
         if (p.getInt(VIEWER, NOBODY) == id) e.putInt(VIEWER, NOBODY);
         e.apply();
     }

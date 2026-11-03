@@ -31,6 +31,11 @@
     <string name="parental_kid_name">孩子的名字</string>
     <string name="parental_kid_row">%1$s：每天 %2$s</string>
     <string name="parental_kid_limit_title">%1$s 的每日限制</string>
+    <string name="parental_enter_kid_password">請輸入%1$s的密碼</string>
+    <string name="parental_new_kid_password">設定此個人檔案的 4 位數密碼</string>
+    <string name="parental_kid_password_saved">個人檔案密碼已儲存</string>
+    <string name="parental_kid_password_set">設定個人檔案密碼</string>
+    <string name="parental_kid_password_remove">移除個人檔案密碼</string>
     <string name="parental_rename">改名字</string>
     <string name="parental_remove_kid">移除 %1$s</string>
     <string name="parental_unlimited">不限時</string>

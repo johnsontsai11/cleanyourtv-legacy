@@ -318,6 +318,8 @@ public final class ParentalActivity extends Activity {
         String name = Parental.kidName(p, id);
         String[] items = {getString(R.string.parental_daily_limit), getString(R.string.parental_allowed_apps),
                 getString(R.string.parental_avatar), getString(R.string.parental_color),
+                getString(Parental.kidHasPassword(p, id) ? R.string.parental_kid_password_remove
+                        : R.string.parental_kid_password_set),
                 getString(R.string.parental_rename), getString(R.string.parental_remove_kid, name)};
         new AlertDialog.Builder(this)
                 .setTitle(name)
@@ -331,6 +333,13 @@ public final class ParentalActivity extends Activity {
                     } else if (which == 3) {
                         pickColor(id);
                     } else if (which == 4) {
+                        if (Parental.kidHasPassword(p, id)) {
+                            Parental.clearKidPassword(p, id);
+                            refresh();
+                        } else {
+                            PinDialog.createKid(this, id, this::refresh);
+                        }
+                    } else if (which == 5) {
                         askName(name, n -> {
                             Parental.renameKid(p, id, n);
                             refresh();
@@ -437,7 +446,8 @@ public final class ParentalActivity extends Activity {
                 row = getString(R.string.parental_kid_row_by_day, name);
         }
         java.util.Set<String> apps = Parental.kidApps(p, id);
-        return apps == null ? row : row + "  ·  " + getString(R.string.parental_kid_apps, apps.size());
+        if (apps != null) row += "  ·  " + getString(R.string.parental_kid_apps, apps.size());
+        return Parental.kidHasPassword(p, id) ? row + "  ·  🔒" : row;
     }
 
     private String limitLabel(int limit) {

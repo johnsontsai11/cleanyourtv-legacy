@@ -70,7 +70,14 @@ public final class WhoActivity extends Activity {
             TextView row = row(col, dp, Parental.kidName(p, id) + "  ·  " + left);
             row.setCompoundDrawablesRelative(Parental.kidAvatar(p, id, (int) (36 * dp)), null, null, null);
             row.setCompoundDrawablePadding((int) (14 * dp));
-            row.setOnClickListener(v -> pick(id));
+            // A profile with a password asks for it first, so one child cannot switch into another's profile.
+            row.setOnClickListener(v -> {
+                if (Parental.kidHasPassword(p, id) && Parental.viewer(p) != id) {
+                    PinDialog.askKid(this, id, () -> pick(id), null);
+                } else {
+                    pick(id);
+                }
+            });
             if (first == null) first = row;
         }
         TextView parent = row(col, dp, getString(R.string.parental_parent));
