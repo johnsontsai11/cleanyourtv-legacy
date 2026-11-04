@@ -188,4 +188,15 @@ $out = ($step | & $py -I ..\tools\tv.py --batch) -join "`n"
 Write-Host $out
 # Only a line that is the marker and nothing else counts: tv.py --batch echoes the step, which contains it too.
 if (($out -split '\r?\n') -cnotcontains $mark) { throw "WRITE_SECURE_SETTINGS is not in the state this install asked for ($mark missing): $hint. The launcher is installed and is Home. Check by hand: tools\tv.py 'dumpsys package com.gathin.tvhome'" }
+# The launcher's accessibility services that are switched on must also be bound: Android can keep one listed but
+# never bind it again after the APK is replaced (Sony BRAVIA 2015, Android 7, until a reboot). The same TV check as
+# build-and-install.sh, which tests/test_launcher_a11y_bound.py keeps identical: services still unbound after 10 s
+# follow `a11y-check:`. Only a warning, as the launcher is installed and is Home.
+$check = 's=$(settings get secure enabled_accessibility_services); [ "$(settings get secure accessibility_enabled)" = 1 ] || s=; i=0; while :; do d=$(dumpsys activity services com.gathin.tvhome); miss=; IFS=:; for c in $s; do case "$c" in com.gathin.tvhome/*) n=${c#com.gathin.tvhome/}; n=${n#com.gathin.tvhome}; case "$d" in *"ServiceRecord{"*" com.gathin.tvhome/$n}"*) ;; *) miss="$miss ${n#.}" ;; esac ;; esac; done; unset IFS; if [ -z "$miss" ] || [ $i -ge 10 ]; then break; fi; i=$((i+1)); sleep 1; done; echo "a11y-check:$miss"'
+$a11y = @(($check | & $py -I ..\tools\tv.py --batch) -split '\r?\n' | Where-Object { $_ -clike 'a11y-check:*' } | Select-Object -First 1)
+if ($a11y.Count -eq 0) {
+    Write-Warning "could not check that the launcher's accessibility services are bound."
+} elseif ($a11y[0].Substring(11).Trim()) {
+    Write-Warning ("switched on but not running after the update: " + $a11y[0].Substring(11).Trim() + ". Android did not bind them again; restart the TV once (adb reboot) and check: tools\tv.py 'dumpsys activity services com.gathin.tvhome' | Select-String ServiceRecord")
+}
 Write-Host 'Installed. Press Home on the remote to see it.'

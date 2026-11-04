@@ -274,4 +274,23 @@ if [ "$ACK_FOUND" != 1 ]; then
   echo "The launcher is installed and is Home. Check by hand: tools/tv.py 'dumpsys package com.gathin.tvhome' | grep $SECURE" >&2
   exit 1
 fi
+# The launcher's accessibility services that are switched on must also be bound: Android can keep one listed but
+# never bind it again after the APK is replaced, and the list rewrites above do not help. On a Sony BRAVIA 2015
+# (Android 7) SettingsGuardService stayed unbound until a reboot, so the settings lock and the power-off Home were
+# silently off. `dumpsys accessibility` prints only a translated label there, so the TV looks for the system's
+# ServiceRecord, allowing 10 s for the bind, and prints the services still unbound after `a11y-check:`. The .ps1
+# sends the same text (tests/test_launcher_a11y_bound.py). Only a warning: the launcher is installed and is Home.
+CHECK='s=$(settings get secure enabled_accessibility_services); [ "$(settings get secure accessibility_enabled)" = 1 ] || s=; i=0; while :; do d=$(dumpsys activity services com.gathin.tvhome); miss=; IFS=:; for c in $s; do case "$c" in com.gathin.tvhome/*) n=${c#com.gathin.tvhome/}; n=${n#com.gathin.tvhome}; case "$d" in *"ServiceRecord{"*" com.gathin.tvhome/$n}"*) ;; *) miss="$miss ${n#.}" ;; esac ;; esac; done; unset IFS; if [ -z "$miss" ] || [ $i -ge 10 ]; then break; fi; i=$((i+1)); sleep 1; done; echo "a11y-check:$miss"'
+OUT=$("$PY" -I ../tools/tv.py "$CHECK") || OUT=""
+UNBOUND=""; CHECKED=0
+while IFS= read -r line; do
+  line=${line%$'\r'}
+  case "$line" in a11y-check:*) CHECKED=1; UNBOUND=${line#a11y-check:}; break ;; esac
+done <<< "$OUT"
+if [ "$CHECKED" != 1 ]; then
+  echo "WARNING: could not check that the launcher's accessibility services are bound." >&2
+elif [ -n "$UNBOUND" ]; then
+  echo "WARNING: switched on but not running after the update:$UNBOUND. Android did not bind them again; restart the TV" >&2
+  echo "once (adb reboot) and check: tools/tv.py 'dumpsys activity services com.gathin.tvhome' | grep ServiceRecord" >&2
+fi
 echo "Installed. Press Home on the remote to see it."
