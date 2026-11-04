@@ -331,21 +331,32 @@ public class HomeKeyService extends AccessibilityService {
     private void armPowerOnHome() {
         if (SystemClock.elapsedRealtime() < BOOT_WINDOW_MS) {
             powerOnUntil = BOOT_WINDOW_MS;
-            if (powerOnAlways) handler.postDelayed(this::homeAtPowerOn, POWER_ON_ALWAYS_DELAY_MS);
+            if (powerOnAlways) handler.postDelayed(homeAtPowerOnTask, POWER_ON_ALWAYS_DELAY_MS);
         }
         if (screenOnReceiver != null) return;
         screenOnReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
+                // power_on_home_always: leave the foreground app at power-off, so it is not on screen at power-on.
+                if (Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) {
+                    handler.removeCallbacks(homeAtPowerOnTask);
+                    powerOnUntil = 0;
+                    if (powerOnAlways) openHome();
+                    return;
+                }
                 powerOnUntil = SystemClock.elapsedRealtime() + SCREEN_ON_WINDOW_MS;
-                if (powerOnAlways) handler.postDelayed(HomeKeyService.this::homeAtPowerOn, POWER_ON_ALWAYS_DELAY_MS);
+                if (powerOnAlways) handler.postDelayed(homeAtPowerOnTask, POWER_ON_ALWAYS_DELAY_MS);
             }
         };
-        registerReceiver(screenOnReceiver, new IntentFilter(Intent.ACTION_SCREEN_ON));
+        IntentFilter screenEvents = new IntentFilter(Intent.ACTION_SCREEN_ON);
+        screenEvents.addAction(Intent.ACTION_SCREEN_OFF);
+        registerReceiver(screenOnReceiver, screenEvents);
     }
 
     /** power_on_home_always: after the firmware has brought its last source back (Philips: within 0.5 s). */
     static final long POWER_ON_ALWAYS_DELAY_MS = 800L;
+
+    private final Runnable homeAtPowerOnTask = this::homeAtPowerOn;
 
     /** power_on_home_always: Home, unless a key was pressed since the screen came on (the user has the TV). */
     private void homeAtPowerOn() {
