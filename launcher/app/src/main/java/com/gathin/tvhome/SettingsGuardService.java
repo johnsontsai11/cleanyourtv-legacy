@@ -66,6 +66,8 @@ public final class SettingsGuardService extends AccessibilityService {
         @Override
         public void onReceive(Context c, Intent intent) {
             Parental.onScreenOn(c);
+            // Power-off: leave the app in front, so it is not still open (under nobody's name) at the next power-on.
+            if (Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) Parental.goHome(c);
         }
     };
 

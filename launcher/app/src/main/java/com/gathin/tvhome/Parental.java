@@ -490,6 +490,16 @@ final class Parental {
         if (!kids(p).isEmpty() && p.getInt(VIEWER, NOBODY) != NOBODY) setViewer(p, NOBODY);
     }
 
+    /** Back to this launcher's Home, with parental controls set up; the foreground app is left behind. */
+    static void goHome(Context c) {
+        if (!hasPin(c)) return;
+        try {
+            c.startActivity(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+                    .setPackage(c.getPackageName()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        } catch (RuntimeException ignored) {
+        }
+    }
+
     /** Picks who is watching from now on; time from here is charged to that child. */
     static void setViewer(SharedPreferences p, int v) {
         long now = System.currentTimeMillis();
