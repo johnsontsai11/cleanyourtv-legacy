@@ -126,12 +126,23 @@ final class Parental {
         return Math.max(until, now) + addMs;
     }
 
-    /** End times for "Custom": every half hour from the next one after `now`, for 24 hours. */
+    /** The last of tomorrow's small hours left out of "Custom" (00:00 to this, both in): nobody locks to 03:00. */
+    static final int CUSTOM_SKIP_UNTIL = 6 * 60;
+
+    /**
+     * End times for "Custom": every half hour from the next one after `now`, for 24 hours, without tomorrow's
+     * 00:00 to 06:00. (Before 06:00, today's are kept: they are the next few hours.)
+     */
     static long[] customEnds(long now) {
-        long[] ends = new long[48];
         long first = nextMinute(now, (minuteOfDay(now) / 30 + 1) * 30 % (24 * 60));
-        for (int i = 0; i < ends.length; i++) ends[i] = first + i * 30 * 60_000L;
-        return ends;
+        long[] all = new long[48];
+        int n = 0;
+        for (int i = 0; i < all.length; i++) {
+            long end = first + i * 30 * 60_000L;
+            if (!sameDay(end, now) && minuteOfDay(end) <= CUSTOM_SKIP_UNTIL) continue;
+            all[n++] = end;
+        }
+        return java.util.Arrays.copyOf(all, n);
     }
 
     static boolean sameDay(long a, long b) {

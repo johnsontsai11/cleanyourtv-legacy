@@ -222,24 +222,37 @@ public class ParentalTest {
     }
 
     @Test
-    public void customLockEndsAreEveryHalfHourForADayFromTheNextOne() {
+    public void customLockEndsAreEveryHalfHourForADayWithoutTomorrowsSmallHours() {
         java.util.Calendar cal = java.util.Calendar.getInstance();
         cal.set(2026, java.util.Calendar.NOVEMBER, 7, 14, 10, 20);
         cal.set(java.util.Calendar.MILLISECOND, 0);
         long now = cal.getTimeInMillis();
         long[] ends = Parental.customEnds(now);
-        assertEquals(48, ends.length);
+        // Today 14:30 to 23:30 (19), then tomorrow 06:30 to 14:00 (16): 00:00 to 06:00 tomorrow are left out.
+        assertEquals(35, ends.length);
         assertEquals(14 * 60 + 30, Parental.minuteOfDay(ends[0]));
         assertTrue(ends[0] > now && ends[0] - now <= 30 * MIN);
-        assertEquals(14 * 60, Parental.minuteOfDay(ends[47]));
-        assertFalse(Parental.sameDay(ends[47], now));
+        assertEquals(23 * 60 + 30, Parental.minuteOfDay(ends[18]));
+        assertEquals(6 * 60 + 30, Parental.minuteOfDay(ends[19]));
+        assertFalse(Parental.sameDay(ends[19], now));
+        assertEquals(14 * 60, Parental.minuteOfDay(ends[34]));
         assertTrue(Parental.sameDay(ends[0], now));
-        // Just before midnight the first end is 00:00, tomorrow.
+        for (long end : ends) {
+            assertFalse(!Parental.sameDay(end, now) && Parental.minuteOfDay(end) <= 6 * 60);
+        }
+        // Just before midnight the first end is tomorrow 06:30.
         cal.set(2026, java.util.Calendar.NOVEMBER, 7, 23, 45, 0);
         cal.set(java.util.Calendar.MILLISECOND, 0);
         long late = cal.getTimeInMillis();
         long[] lateEnds = Parental.customEnds(late);
-        assertEquals(0, Parental.minuteOfDay(lateEnds[0]));
-        assertEquals(15 * MIN, lateEnds[0] - late);
+        assertEquals(6 * 60 + 30, Parental.minuteOfDay(lateEnds[0]));
+        assertEquals(6 * 60 * MIN + 45 * MIN, lateEnds[0] - late);
+        // After midnight, today's small hours are the next ones and stay.
+        cal.set(2026, java.util.Calendar.NOVEMBER, 8, 1, 10, 0);
+        cal.set(java.util.Calendar.MILLISECOND, 0);
+        long night = cal.getTimeInMillis();
+        long[] nightEnds = Parental.customEnds(night);
+        assertEquals(60 + 30, Parental.minuteOfDay(nightEnds[0]));
+        assertTrue(Parental.sameDay(nightEnds[0], night));
     }
 }
