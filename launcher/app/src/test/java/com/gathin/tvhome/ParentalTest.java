@@ -212,4 +212,34 @@ public class ParentalTest {
         assertEquals(10 * MIN, Parental.used(t, p, cls, ty, 2, 0, 30 * MIN, pkg -> true, front, null));
         assertNull(front[0]);
     }
+
+    @Test
+    public void extendingALockAddsToItsEndOrToNowOnceItHasEnded() {
+        long now = 10_000 * MIN;
+        assertEquals(now + 60 * MIN + 30 * MIN, Parental.extendLock(now, now + 60 * MIN, 30 * MIN));
+        assertEquals(now + 30 * MIN, Parental.extendLock(now, now - 5 * MIN, 30 * MIN));
+        assertEquals(now + 30 * MIN, Parental.extendLock(now, 0, 30 * MIN));
+    }
+
+    @Test
+    public void customLockEndsAreEveryHalfHourForADayFromTheNextOne() {
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        cal.set(2026, java.util.Calendar.NOVEMBER, 7, 14, 10, 20);
+        cal.set(java.util.Calendar.MILLISECOND, 0);
+        long now = cal.getTimeInMillis();
+        long[] ends = Parental.customEnds(now);
+        assertEquals(48, ends.length);
+        assertEquals(14 * 60 + 30, Parental.minuteOfDay(ends[0]));
+        assertTrue(ends[0] > now && ends[0] - now <= 30 * MIN);
+        assertEquals(14 * 60, Parental.minuteOfDay(ends[47]));
+        assertFalse(Parental.sameDay(ends[47], now));
+        assertTrue(Parental.sameDay(ends[0], now));
+        // Just before midnight the first end is 00:00, tomorrow.
+        cal.set(2026, java.util.Calendar.NOVEMBER, 7, 23, 45, 0);
+        cal.set(java.util.Calendar.MILLISECOND, 0);
+        long late = cal.getTimeInMillis();
+        long[] lateEnds = Parental.customEnds(late);
+        assertEquals(0, Parental.minuteOfDay(lateEnds[0]));
+        assertEquals(15 * MIN, lateEnds[0] - late);
+    }
 }

@@ -37,6 +37,13 @@
             android:text="@string/parental_controls_row"
             android:visibility="gone" />
 
+        <!-- Lock the TV for a while, or Extend / Unlock now while it is locked (LockTvDialog). -->
+        <TextView
+            android:id="@+id/lockChoice"
+            style="@style/SettingsRow"
+            android:layout_marginTop="10dp"
+            android:visibility="gone" />
+
         <!-- Shown while a parent's extra time runs; ends it at once. -->
         <TextView
             android:id="@+id/extraChoice"

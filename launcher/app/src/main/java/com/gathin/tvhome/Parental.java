@@ -46,11 +46,11 @@ final class Parental {
             EXTRA_UNTIL = "extra_until", KID_IDS = "kid_ids", NEXT_KID = "next_kid",
             VIEWER = "viewer", VIEWER_WALL = "viewer_wall", VIEWER_ELAPSED = "viewer_elapsed",
             VIEWER_UPTIME = "viewer_uptime", SEGMENTS = "segments", WARNED = "warned",
-            PIN_LEN = "pin_len";
+            PIN_LEN = "pin_len", LOCK_UNTIL = "lock_until";
     /** Bedtime start when it is off. Minutes of the day otherwise. */
     static final int OFF = -1;
     static final int DEFAULT_BED_END = 7 * 60;
-    static final int FREE = 0, BEDTIME = 1, LIMIT_REACHED = 2, NEED_VIEWER = 3;
+    static final int FREE = 0, BEDTIME = 1, LIMIT_REACHED = 2, NEED_VIEWER = 3, LOCKED = 4;
     /** VIEWER values besides a child's id. */
     static final int NOBODY = -1, PARENT = -2;
     /** The package name passed for an input on a TV with no Live TV app, so inputs are counted too. */
@@ -90,9 +90,63 @@ final class Parental {
         return enabled(c) && prefs(c).contains(PIN);
     }
 
-    /** A bedtime, a limit or a child is set (they need a PIN to count). */
+    /** A bedtime, a limit, a child or a lock is set (they need a PIN to count). */
     static boolean anyRule(SharedPreferences p) {
-        return p.contains(PIN) && (p.getInt(BED_START, OFF) >= 0 || !kids(p).isEmpty());
+        return p.contains(PIN) && (p.getInt(BED_START, OFF) >= 0 || !kids(p).isEmpty()
+                || p.getLong(LOCK_UNTIL, 0) > System.currentTimeMillis());
+    }
+
+    // ---- Lock the TV ----
+
+    /**
+     * Locks the TV for everyone until `until` (wall clock): apps and inputs show the lockout page, Home stays. Ends
+     * extra time, signs Parent out (or the lock would wait for the next pick) and asks for the PIN again.
+     */
+    static void lockTv(Context c, long until) {
+        SharedPreferences p = prefs(c);
+        p.edit().putLong(LOCK_UNTIL, until).remove(EXTRA_UNTIL).commit();
+        if (p.getInt(VIEWER, NOBODY) == PARENT) setViewer(p, NOBODY);
+        lockAgain();
+        schedule(c);
+    }
+
+    static void unlockTv(Context c) {
+        prefs(c).edit().remove(LOCK_UNTIL).commit();
+        schedule(c);
+    }
+
+    /** The lock's end, or 0 when the TV is not locked. */
+    static long lockedUntil(SharedPreferences p, long now) {
+        long until = p.getLong(LOCK_UNTIL, 0);
+        return until > now ? until : 0;
+    }
+
+    /** A lock's new end when `addMs` is added: from its current end, or from now if it has already ended. */
+    static long extendLock(long now, long until, long addMs) {
+        return Math.max(until, now) + addMs;
+    }
+
+    /** End times for "Custom": every half hour from the next one after `now`, for 24 hours. */
+    static long[] customEnds(long now) {
+        long[] ends = new long[48];
+        long first = nextMinute(now, (minuteOfDay(now) / 30 + 1) * 30 % (24 * 60));
+        for (int i = 0; i < ends.length; i++) ends[i] = first + i * 30 * 60_000L;
+        return ends;
+    }
+
+    static boolean sameDay(long a, long b) {
+        return startOfDay(a) == startOfDay(b);
+    }
+
+    /** "14:00" today, or "Sat 14:00" on another day. */
+    static String lockEndLabel(Context c, long until, long now) {
+        String time = hhmm(minuteOfDay(until));
+        if (sameDay(until, now)) return time;
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(until);
+        String day = new java.text.DateFormatSymbols(c.getResources().getConfiguration().locale)
+                .getShortWeekdays()[cal.get(Calendar.DAY_OF_WEEK)];
+        return day + " " + time;
     }
 
     // ---- PIN ----
@@ -745,6 +799,11 @@ final class Parental {
         long used = limit <= 0 ? 0 : s.usage.by(p, s.viewer, now);
         if (limit > 0) s.leftMs = Math.max(0, limit * 60_000L - used);
         if (s.viewer == PARENT) return s;
+        // A lock comes before everything else, extra time and the pick included.
+        if (lockedUntil(p, now) > 0) {
+            s.state = LOCKED;
+            return s;
+        }
         s.state = state(minuteOfDay(now), used, now, p.getInt(BED_START, OFF), p.getInt(BED_END, DEFAULT_BED_END),
                 limit, p.getLong(EXTRA_UNTIL, 0));
         // Who is watching comes first, extra time or not: extra time lifts bedtime and the limits, but the time

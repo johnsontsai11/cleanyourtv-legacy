@@ -178,6 +178,12 @@ public final class LauncherSettingsActivity extends Activity {
             findViewById(R.id.parentalSection).setVisibility(View.VISIBLE);
             parentalChoice.setVisibility(View.VISIBLE);
             parentalChoice.setOnClickListener(v -> open(new Intent(this, ParentalActivity.class)));
+            TextView lockChoice = findViewById(R.id.lockChoice);
+            lockChoice.setVisibility(View.VISIBLE);
+            lockChoice.setOnClickListener(v -> LockTvDialog.open(this, () -> {
+                updateLockChoice();
+                updateExtraChoice();
+            }));
             findViewById(R.id.extraChoice).setOnClickListener(v -> {
                 Parental.prefs(this).edit().remove(Parental.EXTRA_UNTIL).commit();
                 Parental.schedule(this);
@@ -201,8 +207,14 @@ public final class LauncherSettingsActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        updateLockChoice();
         updateExtraChoice();
         updateKeyboardChoice();
+    }
+
+    /** Fork, parental controls: "Lock the TV…", or "The TV is locked until Sat 14:00". */
+    private void updateLockChoice() {
+        if (Parental.enabled(this)) ((TextView) findViewById(R.id.lockChoice)).setText(LockTvDialog.rowText(this));
     }
 
     // ---- Fork: keyboard switch ----

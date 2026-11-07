@@ -80,4 +80,18 @@
     <string name="settings_keyboard_needs_grant">Switching keyboards needs a permission granted from a computer: adb shell pm grant com.gathin.tvhome android.permission.WRITE_SECURE_SETTINGS</string>
     <string name="keyboard_pill_google">Google keyboard</string>
     <string name="keyboard_pill_usual">Usual keyboard</string>
+    <string name="parental_lock_tv">Lock the TV…</string>
+    <string name="parental_lock_state">The TV is locked until %1$s</string>
+    <string name="parental_lock_title">Lock the TV for</string>
+    <string name="parental_lock_extend_title">Lock it for longer</string>
+    <string name="parental_lock_hours">%1$d h</string>
+    <string name="parental_lock_until">Until %1$s</string>
+    <string name="parental_lock_custom">Until a time I choose…</string>
+    <string name="parental_lock_custom_title">Locked until</string>
+    <string name="parental_lock_tomorrow">%1$s tomorrow</string>
+    <string name="parental_lock_extend">Extend</string>
+    <string name="parental_lock_unlock">Unlock now</string>
+    <string name="parental_locked_title">The TV is locked</string>
+    <string name="parental_locked_message">A parent locked the TV until %1$s.</string>
+    <string name="parental_unlock_parent">Unlock now (parent)</string>
 </resources>

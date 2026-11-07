@@ -79,4 +79,18 @@
     <string name="settings_keyboard_needs_grant">切換鍵盤需要先在電腦上授權：adb shell pm grant com.gathin.tvhome android.permission.WRITE_SECURE_SETTINGS</string>
     <string name="keyboard_pill_google">Google 鍵盤</string>
     <string name="keyboard_pill_usual">多語言鍵盤</string>
+    <string name="parental_lock_tv">鎖定電視…</string>
+    <string name="parental_lock_state">電視已鎖定，直到 %1$s</string>
+    <string name="parental_lock_title">鎖定電視多久</string>
+    <string name="parental_lock_extend_title">延長鎖定</string>
+    <string name="parental_lock_hours">%1$d 小時</string>
+    <string name="parental_lock_until">直到 %1$s</string>
+    <string name="parental_lock_custom">直到我選的時間…</string>
+    <string name="parental_lock_custom_title">鎖定到</string>
+    <string name="parental_lock_tomorrow">明天 %1$s</string>
+    <string name="parental_lock_extend">延長</string>
+    <string name="parental_lock_unlock">立即解鎖</string>
+    <string name="parental_locked_title">電視已鎖定</string>
+    <string name="parental_locked_message">家長已將電視鎖定到 %1$s。</string>
+    <string name="parental_unlock_parent">立即解鎖（家長）</string>
 </resources>
