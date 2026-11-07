@@ -71,8 +71,18 @@ final class LockTvDialog {
         }
         if (!extend) {
             long morning = Parental.nextMinute(now, Parental.DEFAULT_BED_END);
-            labels.add(a.getString(R.string.parental_lock_until, Parental.lockEndLabel(a, morning, now)));
-            ends.add(morning);
+            SharedPreferences p = Parental.prefs(a);
+            long bedEnd = Parental.bedEndAfter(now, p.getInt(Parental.BED_START, Parental.OFF),
+                    p.getInt(Parental.BED_END, Parental.DEFAULT_BED_END));
+            // "Until 07:00", unless bedtime ends then too: the bedtime row below says the same.
+            if (bedEnd != morning) {
+                labels.add(a.getString(R.string.parental_lock_until, Parental.lockEndLabel(a, morning, now)));
+                ends.add(morning);
+            }
+            if (bedEnd > 0) {
+                labels.add(a.getString(R.string.parental_lock_until_bed_end, Parental.lockEndLabel(a, bedEnd, now)));
+                ends.add(bedEnd);
+            }
             labels.add(a.getString(R.string.parental_lock_custom));
             ends.add(0L);
         }

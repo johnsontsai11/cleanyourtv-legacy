@@ -145,6 +145,11 @@ final class Parental {
         return java.util.Arrays.copyOf(all, n);
     }
 
+    /** When the coming bedtime ends (the next `bedEnd` after `now`), or 0 with bedtime off. */
+    static long bedEndAfter(long now, int bedStart, int bedEnd) {
+        return bedStart < 0 ? 0 : nextMinute(now, bedEnd);
+    }
+
     static boolean sameDay(long a, long b) {
         return startOfDay(a) == startOfDay(b);
     }

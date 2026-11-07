@@ -255,4 +255,22 @@ public class ParentalTest {
         assertEquals(60 + 30, Parental.minuteOfDay(nightEnds[0]));
         assertTrue(Parental.sameDay(nightEnds[0], night));
     }
+
+    @Test
+    public void theLockCanRunUntilTheComingBedtimeEnds() {
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        cal.set(2026, java.util.Calendar.NOVEMBER, 7, 21, 15, 0);
+        cal.set(java.util.Calendar.MILLISECOND, 0);
+        long evening = cal.getTimeInMillis();
+        assertEquals(0, Parental.bedEndAfter(evening, Parental.OFF, 7 * 60));
+        long end = Parental.bedEndAfter(evening, 21 * 60, 7 * 60 + 30);
+        assertEquals(7 * 60 + 30, Parental.minuteOfDay(end));
+        assertFalse(Parental.sameDay(end, evening));
+        // After midnight, the bedtime that is on now ends this morning.
+        cal.set(2026, java.util.Calendar.NOVEMBER, 8, 1, 0, 0);
+        long night = cal.getTimeInMillis();
+        long nightEnd = Parental.bedEndAfter(night, 21 * 60, 7 * 60 + 30);
+        assertTrue(Parental.sameDay(nightEnd, night));
+        assertEquals(6 * 60 * MIN + 30 * MIN, nightEnd - night);
+    }
 }

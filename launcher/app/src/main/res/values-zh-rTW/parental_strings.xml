@@ -85,6 +85,7 @@
     <string name="parental_lock_extend_title">延長鎖定</string>
     <string name="parental_lock_hours">%1$d 小時</string>
     <string name="parental_lock_until">直到 %1$s</string>
+    <string name="parental_lock_until_bed_end">直到就寢時間結束（%1$s）</string>
     <string name="parental_lock_custom">直到我選的時間…</string>
     <string name="parental_lock_custom_title">鎖定到</string>
     <string name="parental_lock_tomorrow">明天 %1$s</string>

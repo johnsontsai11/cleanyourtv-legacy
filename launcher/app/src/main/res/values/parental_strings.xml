@@ -86,6 +86,7 @@
     <string name="parental_lock_extend_title">Lock it for longer</string>
     <string name="parental_lock_hours">%1$d h</string>
     <string name="parental_lock_until">Until %1$s</string>
+    <string name="parental_lock_until_bed_end">Until bedtime ends (%1$s)</string>
     <string name="parental_lock_custom">Until a time I choose…</string>
     <string name="parental_lock_custom_title">Locked until</string>
     <string name="parental_lock_tomorrow">%1$s tomorrow</string>
